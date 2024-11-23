@@ -16,7 +16,7 @@ shall be included in all copies or substantial portions of the Software.
 Written permission shall be obtained from Rane (elijahrane@gmail.com) or Aisha (dottonec@gmail.com)
 to do anything beyond use the software binaries provided by the Hullrot Development Team. This permission will apply only to the files defined in the communication.
 
-The software will not be used to send advertisements to the address "https://hub.spacestation14.com/" or any equilvalent address
+The software will not be used to send advertisements to the address "https://hub.spacestation14.com/" or any address
 that will create an entry in any server lists ran by the Space Wizard's Federation.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
