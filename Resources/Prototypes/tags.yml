@@ -1448,3 +1448,43 @@
   id: WriteIgnoreStamps
 
 # ALPHABETICAL
+
+# ALPHABETICAL
+
+# PUT YOUR TAGS IN ALPHABETICAL ORDER
+
+- type: Tag # Hullrot
+  id: BloodFood # Hullrot
+
+- type: Tag # Hullrot Space Artillery
+  id: CartridgeGPMG # Hullrot Space Artillery
+
+- type: Tag # Hullrot Space Artillery
+  id: CartridgeMachineGun # Hullrot Space Artillery
+
+- type: Tag # Hullrot Space Artillery
+  id: CartridgeNitroExpress # Hullrot Space Artillery
+
+- type: Tag # Hullrot Space Artillery
+  id: CartridgeRailgun # Hullrot Space Artillery
+
+- type: Tag # Hullrot Space Artillery
+  id: CartridgeShell # Hullrot Space Artillery
+
+- type: Tag # Hullrot
+  id: MothFood #Hullrot
+
+- type: Tag #Hullrot Space Artillery
+  id: SlugthrowerCartridgeBox #Hullrot Space Artillery
+
+- type: Tag # Hullrot
+  id: WeaponRanged # Hullrot
+
+- type: Tag # Hullrot
+  id: WeaponLongarms # Hullrot
+
+- type: Tag # Hullrot
+  id: WeaponShortArms # Hullrot
+
+- type: Tag # Hullrot
+  id: WeaponMelee # Hullrot
