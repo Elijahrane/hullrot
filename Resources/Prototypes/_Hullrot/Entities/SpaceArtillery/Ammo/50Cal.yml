@@ -20,6 +20,7 @@
   id: 50BulletEMP
   name: .50 EMP-tip slugthrower pellet
   parent: 50BulletBase
+  categories: [ HideSpawnMenu ]
   components:
   - type: Projectile
     damage:
@@ -42,6 +43,7 @@
   id: 50BulletArmorPiercing
   name: .50 AP slugthrower bullet
   parent: 50BulletBase
+  categories: [ HideSpawnMenu ]
   components:
   - type: Projectile
     damage:
@@ -66,6 +68,7 @@
   id: 50BulletHighExplosive
   name: .50 low-yield explosive slugthrower bullet
   parent: 50BulletBase
+  categories: [ HideSpawnMenu ]
   components:
   - type: Projectile
     damage:
@@ -92,6 +95,7 @@
   id: 50BulletPractice
   name: .50 inert slughthrower bullet
   parent: 50BulletBase
+  categories: [ HideSpawnMenu ]
   components:
   - type: Projectile
     damage:

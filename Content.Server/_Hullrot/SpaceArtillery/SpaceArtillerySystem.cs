@@ -47,6 +47,7 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
     {
         base.Initialize();
         _sawmill = Logger.GetSawmill("SpaceArtillery");
+        SubscribeLocalEvent<SpaceArtilleryComponent, ComponentInit>(OnComponentInit);
         SubscribeLocalEvent<SpaceArtilleryComponent, SignalReceivedEvent>(OnSignalReceived);
         SubscribeLocalEvent<SpaceArtilleryComponent, AmmoShotEvent>(OnShotEvent);
         SubscribeLocalEvent<SpaceArtilleryComponent, OnEmptyGunShotEvent>(OnEmptyShotEvent);
@@ -54,9 +55,16 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
         SubscribeLocalEvent<SpaceArtilleryComponent, ChargeChangedEvent>(OnBatteryChargeChanged);
         SubscribeLocalEvent<SpaceArtilleryComponent, ExaminedEvent>(OnExamine);
         SubscribeLocalEvent<ShipWeaponProjectileComponent, ProjectileHitEvent>(OnProjectileHit);
+
     }
 
+    private void OnComponentInit(EntityUid uid, SpaceArtilleryComponent component, ComponentInit args)
+    {
+        if (!TryComp<BatteryComponent>(uid, out var battery))
+            return;
 
+        component.IsPowered = (battery.CurrentCharge > 0);
+    }
 
     private void OnExamine(EntityUid uid, SpaceArtilleryComponent component, ExaminedEvent args)
     {

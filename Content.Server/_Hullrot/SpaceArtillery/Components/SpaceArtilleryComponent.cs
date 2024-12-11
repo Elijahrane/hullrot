@@ -51,12 +51,6 @@ public sealed partial class SpaceArtilleryComponent : Component
     public bool IsPowerRequiredForSignal = true;
 
     /// <summary>
-    /// Whether the space artillery need power to operate manually when mounted/buckled to
-    /// </summary>
-    [DataField("isPowerRequiredForMount"), ViewVariables(VVAccess.ReadWrite)]
-    public bool IsPowerRequiredForMount = false;
-
-    /// <summary>
     /// Amount of power being used when operating
     /// </summary>
     [DataField("powerUsePassive"), ViewVariables(VVAccess.ReadWrite)]
@@ -73,44 +67,6 @@ public sealed partial class SpaceArtilleryComponent : Component
     /// </summary>
     [DataField("powerUseActive"), ViewVariables(VVAccess.ReadWrite)]
     public int PowerUseActive = 6000;
-
-
-    /// <summary>
-    /// Maximum velocity which grid can reach from recoil impulse, at moment there is high variance, will go above it by 10
-    /// </summary>
-    [DataField("velocityLimitRecoilGrid"), ViewVariables(VVAccess.ReadWrite)]
-    public float VelocityLimitRecoilGrid = 30;
-
-    /// <summary>
-    /// Amount of power used when firing
-    /// </summary>
-    [DataField("linearRecoilGrid"), ViewVariables(VVAccess.ReadWrite)]
-    public float LinearRecoilGrid = 30;
-
-    /// <summary>
-    /// Amount of power used when firing
-    /// </summary>
-    [DataField("angularInstabilityGrid"), ViewVariables(VVAccess.ReadWrite)]
-    public float AngularInstabilityGrid = 10;
-
-
-    /// <summary>
-    /// Maximum velocity which unanchored weapon can reach from recoil impulse
-    /// </summary>
-    [DataField("velocityLimitRecoilWeapon"), ViewVariables(VVAccess.ReadWrite)]
-    public float VelocityLimitRecoilWeapon = 30;
-
-    /// <summary>
-    /// Amount of power used when firing
-    /// </summary>
-    [DataField("linearRecoilWeapon"), ViewVariables(VVAccess.ReadWrite)]
-    public float LinearRecoilWeapon = 60;
-
-    /// <summary>
-    /// Amount of power used when firing
-    /// </summary>
-    [DataField("angularInstabilityWeapon"), ViewVariables(VVAccess.ReadWrite)]
-    public float AngularInstabilityWeapon = 30;
 
 
     ///Sink Ports

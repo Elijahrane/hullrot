@@ -20,6 +20,8 @@
 - type: entity
   id: 120mmBulletExplosiveBase
   parent: 120mmBulletBase
+  abstract: true
+  categories: [ HideSpawnMenu ]
   components:
     - type: ExplodeOnTrigger
     - type: Explosive
@@ -29,6 +31,7 @@
 - type: entity
   id: 120mmBulletArmorPiercing
   parent: 120mmBulletExplosiveBase
+  categories: [ HideSpawnMenu ]
   components:
   - type: Projectile
     damage:
@@ -50,6 +53,7 @@
 - type: entity
   id: 120mmBulletHighExplosive
   parent: 120mmBulletExplosiveBase
+  categories: [ HideSpawnMenu ]
   components:
   - type: Projectile
     damage:
@@ -71,6 +75,7 @@
 - type: entity
   id: 120mmBulletPractice
   parent: 120mmBulletExplosiveBase
+  categories: [ HideSpawnMenu ]
   components:
   - type: Projectile
     damage:
@@ -92,6 +97,7 @@
   id: 120mmBulletEmp
   name: shell
   parent: 120mmBulletBase
+  categories: [ HideSpawnMenu ]
   components:
   - type: Projectile
     damage:
