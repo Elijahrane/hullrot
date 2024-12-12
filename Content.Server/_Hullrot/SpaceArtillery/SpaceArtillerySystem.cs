@@ -1,4 +1,5 @@
 using System.Numerics;
+using Content.Server.DeviceLinking.Components;
 using Content.Server.DeviceLinking.Events;
 using Content.Server.DeviceLinking.Systems;
 using Content.Server.Power.Components;
@@ -25,15 +26,8 @@ namespace Content.Server._Hullrot.SpaceArtillery;
 
 public sealed partial class SpaceArtillerySystem : EntitySystem
 {
-    [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
     [Dependency] private readonly GunSystem _gun = default!;
-    [Dependency] private readonly SharedCombatModeSystem _combat = default!;
-    [Dependency] private readonly SharedActionsSystem _actionsSystem = default!;
-    [Dependency] private readonly SharedContainerSystem _containerSystem = default!;
-    [Dependency] private readonly ItemSlotsSystem _itemSlotsSystem = default!;
     [Dependency] private readonly DeviceLinkSystem _deviceLink = default!;
-    [Dependency] private readonly IGameTiming _gameTiming = default!;
-    [Dependency] private readonly SharedShuttleSystem _shuttleSystem = default!;
     [Dependency] private readonly BatterySystem _battery = default!;
     [Dependency] private readonly SharedTransformSystem _xform = default!;
     [Dependency] private readonly SharedCameraRecoilSystem _recoilSystem = default!;
@@ -47,100 +41,27 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
     {
         base.Initialize();
         _sawmill = Logger.GetSawmill("SpaceArtillery");
-        SubscribeLocalEvent<SpaceArtilleryComponent, ComponentInit>(OnComponentInit);
-        SubscribeLocalEvent<SpaceArtilleryComponent, SignalReceivedEvent>(OnSignalReceived);
         SubscribeLocalEvent<SpaceArtilleryComponent, AmmoShotEvent>(OnShotEvent);
-        SubscribeLocalEvent<SpaceArtilleryComponent, OnEmptyGunShotEvent>(OnEmptyShotEvent);
         SubscribeLocalEvent<SpaceArtilleryComponent, PowerChangedEvent>(OnApcChanged);
+        SubscribeLocalEvent<SpaceArtilleryComponent, OnEmptyGunShotEvent>(OnEmptyShotEvent);
+        SubscribeLocalEvent<SpaceArtilleryComponent, SignalReceivedEvent>(OnSignalReceived);
         SubscribeLocalEvent<SpaceArtilleryComponent, ChargeChangedEvent>(OnBatteryChargeChanged);
-        SubscribeLocalEvent<SpaceArtilleryComponent, ExaminedEvent>(OnExamine);
         SubscribeLocalEvent<ShipWeaponProjectileComponent, ProjectileHitEvent>(OnProjectileHit);
 
     }
 
-    private void OnComponentInit(EntityUid uid, SpaceArtilleryComponent component, ComponentInit args)
-    {
-        if (!TryComp<BatteryComponent>(uid, out var battery))
-            return;
-
-        component.IsPowered = (battery.CurrentCharge > 0);
-    }
-
-    private void OnExamine(EntityUid uid, SpaceArtilleryComponent component, ExaminedEvent args)
-    {
-        if (!args.IsInDetailsRange)
-            return;
-
-        if (component.IsArmed == true)
-        {
-            args.PushMarkup(Loc.GetString("space-artillery-on-examine-safe"));
-        }
-        else
-        {
-            args.PushMarkup(Loc.GetString("space-artillery-on-examine-armed"));
-        }
-    }
-
     private void OnSignalReceived(EntityUid uid, SpaceArtilleryComponent component, ref SignalReceivedEvent args)
     {
-        if (component.IsPowered == true || component.IsPowerRequiredForSignal == false)
-        {
-            if (args.Port == component.SpaceArtilleryFirePort && component.IsArmed == true)
-            {
-                if (TryComp<BatteryComponent>(uid, out var battery))
-                {
-                    if (component.IsPowered == true && battery.CurrentCharge >= component.PowerUseActive || component.IsPowerRequiredToFire == false)
-                        TryFireArtillery(uid, component);
-                    else
-                        OnMalfunction(uid, component);
-                }
-            }
-            if (args.Port == component.SpaceArtilleryToggleSafetyPort)
-            {
-                if (TryComp<CombatModeComponent>(uid, out var combat))
-                {
-                    if (combat.IsInCombatMode == false)
-                    {
-                        _combat.SetInCombatMode(uid, true, combat);
-                        component.IsArmed = true;
+        if (args.Port != component.SpaceArtilleryFirePort)
+            OnMalfunction(uid, component);
 
-                        if (component.IsCapableOfSendingSignal == true)
-                            _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedSafetyChangePort, true);
-                    }
-                    else
-                    {
-                        _combat.SetInCombatMode(uid, false, combat);
-                        component.IsArmed = false;
+        var hasBattery = TryComp<BatteryComponent>(uid, out var battery);
 
-                        if (component.IsCapableOfSendingSignal == true)
-                            _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedSafetyChangePort, true);
-                    }
-                }
-            }
-            if (args.Port == component.SpaceArtilleryOnSafetyPort)
-            {
-                if (TryComp<CombatModeComponent>(uid, out var combat))
-                {
-                    if (combat.IsInCombatMode == true && component.IsCapableOfSendingSignal == true)
-                        _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedSafetyChangePort, true);
+        if (!TryComp<ApcPowerReceiverComponent>(uid, out var apc) && !hasBattery)
+            return;
 
-                    _combat.SetInCombatMode(uid, false, combat);
-                    component.IsArmed = false;
-
-                }
-            }
-            if (args.Port == component.SpaceArtilleryOffSafetyPort)
-            {
-                if (TryComp<CombatModeComponent>(uid, out var combat))
-                {
-                    if (combat.IsInCombatMode == false && component.IsCapableOfSendingSignal == true)
-                        _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedSafetyChangePort, true);
-
-                    _combat.SetInCombatMode(uid, true, combat);
-                    component.IsArmed = true;
-                }
-            }
-        }
+        if (apc is { Powered: true } || battery?.CurrentCharge >= component.PowerUseActive)
+            TryFireArtillery(uid, component);
         else
             OnMalfunction(uid, component);
     }
@@ -152,18 +73,13 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
         {
             if (args.Powered)
             {
-                component.IsCharging = true;
                 batteryCharger.AutoRecharge = true;
                 batteryCharger.AutoRechargeRate = component.PowerChargeRate;
             }
             else
             {
-                component.IsCharging = false;
                 batteryCharger.AutoRecharge = true;
                 batteryCharger.AutoRechargeRate = component.PowerUsePassive * -1;
-
-                if (TryComp<BatteryComponent>(uid, out var battery))
-                    _battery.UseCharge(uid, component.PowerUsePassive, battery); //It is done so that BatterySelfRecharger will get start operating instead of being blocked by fully charged battery
             }
         }
     }
@@ -171,25 +87,9 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
 
     private void OnBatteryChargeChanged(EntityUid uid, SpaceArtilleryComponent component, ref ChargeChangedEvent args)
     {
-        if (args.Charge > 0)
-        {
-            component.IsPowered = true;
-        }
-        else
-        {
-            component.IsPowered = false;
-        }
-
         if (TryComp<ApcPowerReceiverComponent>(uid, out var apcPowerReceiver) && TryComp<BatteryComponent>(uid, out var battery))
         {
-            if (battery.IsFullyCharged == false)
-            {
-                apcPowerReceiver.Load = component.PowerUsePassive + component.PowerChargeRate;
-            }
-            else
-            {
-                apcPowerReceiver.Load = component.PowerUsePassive;
-            }
+            apcPowerReceiver.Load = battery.IsFullyCharged ? component.PowerUsePassive : component.PowerUsePassive + component.PowerChargeRate;
         }
     }
 
@@ -227,21 +127,10 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
 
         if (TryComp<BatteryComponent>(uid, out var battery))
         {
-            var worldPosX = _xform.GetWorldPosition(uid).X;
-            var worldPosY = _xform.GetWorldPosition(uid).Y;
-            var worldRot = _xform.GetWorldRotation(uid) + Math.PI;
-            var targetSpot = new Vector2(worldPosX - DISTANCE * (float) Math.Sin(worldRot), worldPosY + DISTANCE * (float) Math.Cos(worldRot));
-
-            var xformGridUid = Transform(uid).GridUid;
-
-            if (component.IsCapableOfSendingSignal == true)
-                _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedFiringPort, true);
-
-            if (component.IsPowerRequiredToFire == true)
-            {
-                _battery.UseCharge(uid, component.PowerUseActive, battery);
-            }
+            _battery.UseCharge(uid, component.PowerUseActive, battery);
         }
+
+        _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedFiringPort, true);
     }
 
     private void OnEmptyShotEvent(EntityUid uid, SpaceArtilleryComponent component, OnEmptyGunShotEvent args)
@@ -251,7 +140,7 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
 
     private void OnMalfunction(EntityUid uid, SpaceArtilleryComponent component)
     {
-        if (component.IsCapableOfSendingSignal == true)
+        if (TryComp<SignallerComponent>(uid, out var signaller))
             _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedMalfunctionPort, true);
     }
 

@@ -168,18 +168,11 @@
   - type: DeviceLinkSink
     ports:
     - SpaceArtilleryFire
-    - SpaceArtilleryToggleSafety
-    - SpaceArtilleryOnSafety
-    - SpaceArtilleryOffSafety
   - type: DeviceLinkSource
     ports:
     - SpaceArtilleryDetectedFiring
     - SpaceArtilleryDetectedMalfunction
-    - SpaceArtilleryDetectedSafetyChange
   - type: SpaceArtillery
-    isArmed: true
-    isPowerRequiredForSignal: true
-    isPowerRequiredToFire: false
   - type: ContainerContainer
     containers:
       ballistic-ammo: !type:Container
@@ -188,6 +181,5 @@
     deviceNetId: Wireless
     receiveFrequencyId: BasicDevice
   - type: ApcPowerReceiver
-    powerLoad: 3000
   - type: ExtensionCableReceiver
   - type: BatterySelfRecharger

@@ -1,14 +1,9 @@
 - type: sourcePort
   id: SpaceArtilleryDetectedFiring
-  name: signal-port-name-space-artillery-detected-firing
-  description: signal-port-description-space-artillery-detected-firing
+  name: "Firing detected"
+  description: "Sends signal when it detects Space Artillery successfully firing a shot."
 
 - type: sourcePort
   id: SpaceArtilleryDetectedMalfunction
-  name: signal-port-name-space-artillery-detected-malfunction
-  description: signal-port-description-space-artillery-detected-malfunction
-
-- type: sourcePort
-  id: SpaceArtilleryDetectedSafetyChange
-  name: signal-port-name-space-artillery-detected-safety-change
-  description: signal-port-description-space-artillery-detected-safety-change
+  name: "Malfunction detected"
+  description: "Sends signal when it detects Space Artillery failing to fire or detecting an issue."
