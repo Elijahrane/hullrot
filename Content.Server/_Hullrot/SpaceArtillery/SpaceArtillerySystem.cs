@@ -10,6 +10,7 @@ using Content.Shared.Actions;
 using Content.Shared.Camera;
 using Content.Shared.CombatMode;
 using Content.Shared.Containers.ItemSlots;
+using Content.Shared.DeviceLinking;
 using Content.Shared.Examine;
 using Content.Shared.Power;
 using Content.Shared.Projectiles;
@@ -52,6 +53,9 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
 
     private void OnSignalReceived(EntityUid uid, SpaceArtilleryComponent component, ref SignalReceivedEvent args)
     {
+        if (!TryComp<DeviceLinkSinkComponent>(uid, out var source))
+            return;
+
         if (args.Port != component.SpaceArtilleryFirePort)
             OnMalfunction(uid, component);
 
@@ -129,8 +133,8 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
         {
             _battery.UseCharge(uid, component.PowerUseActive, battery);
         }
-
-        _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedFiringPort, true);
+        if (TryComp<DeviceLinkSourceComponent>(uid, out var source))
+            _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedFiringPort, true);
     }
 
     private void OnEmptyShotEvent(EntityUid uid, SpaceArtilleryComponent component, OnEmptyGunShotEvent args)
@@ -140,7 +144,7 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
 
     private void OnMalfunction(EntityUid uid, SpaceArtilleryComponent component)
     {
-        if (TryComp<SignallerComponent>(uid, out var signaller))
+        if (TryComp<DeviceLinkSourceComponent>(uid, out var source))
             _deviceLink.SendSignal(uid, component.SpaceArtilleryDetectedMalfunctionPort, true);
     }
 
