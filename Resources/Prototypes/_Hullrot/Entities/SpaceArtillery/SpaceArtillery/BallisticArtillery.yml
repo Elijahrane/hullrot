@@ -80,8 +80,10 @@
   - type: Airtight
   - type: RadiationBlocker
     resistance: 8
-
-
+  - type: ContainerContainer
+    containers:
+      gun_chamber: !type:ContainerSlot
+      gun_magazine: !type:ContainerSlot
 #120mm
 
 - type: entity
@@ -138,7 +140,7 @@
 # base
 - type: entity
   id: BallisticArtillery
-  parent: ConstructibleMachine
+  parent: BaseMachinePowered
   placement:
     mode: SnapgridCenter
   components:
@@ -173,13 +175,14 @@
     - SpaceArtilleryDetectedFiring
     - SpaceArtilleryDetectedMalfunction
   - type: SpaceArtillery
-  - type: ContainerContainer
-    containers:
-      ballistic-ammo: !type:Container
-        ents: []
   - type: DeviceNetwork
     deviceNetId: Wireless
     receiveFrequencyId: BasicDevice
   - type: ApcPowerReceiver
   - type: ExtensionCableReceiver
   - type: BatterySelfRecharger
+  - type: ContainerContainer
+    containers:
+      ballistic-ammo: !type:Container
+      machine_board: !type:Container
+      machine_parts: !type:Container

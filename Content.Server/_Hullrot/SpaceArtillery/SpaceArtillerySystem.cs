@@ -48,7 +48,13 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
         SubscribeLocalEvent<SpaceArtilleryComponent, SignalReceivedEvent>(OnSignalReceived);
         SubscribeLocalEvent<SpaceArtilleryComponent, ChargeChangedEvent>(OnBatteryChargeChanged);
         SubscribeLocalEvent<ShipWeaponProjectileComponent, ProjectileHitEvent>(OnProjectileHit);
+        SubscribeLocalEvent<SpaceArtilleryComponent, MapInitEvent>(OnInit);
 
+    }
+
+    private void OnInit(EntityUid uid, SpaceArtilleryComponent component, ref MapInitEvent args)
+    {
+        base.Initialize();
     }
 
     private void OnSignalReceived(EntityUid uid, SpaceArtilleryComponent component, ref SignalReceivedEvent args)
