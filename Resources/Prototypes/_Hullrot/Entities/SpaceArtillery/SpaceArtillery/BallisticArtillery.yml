@@ -10,24 +10,6 @@
   components:
   - type: StaticPrice
     price: 2500
-  - type: Damageable
-    damageContainer: Inorganic
-  - type: Destructible
-    thresholds:
-    - trigger:
-        !type:DamageTrigger
-        damage: 450
-      behaviors:
-      - !type:DoActsBehavior
-        acts: [ "Destruction" ]
-      - !type:PlaySoundBehavior
-        sound:
-          collection: MetalGlassBreak
-      - !type:SpawnEntitiesBehavior
-        spawn:
-          SheetSteel1:
-            min: 2
-            max: 4
   - type: Sprite
     sprite: _Hullrot/Objects/ShuttleWeapons/50cal.rsi
     layers:
@@ -92,16 +74,6 @@
   parent: BallisticArtillery
   description: A heavier, bulkier version of the slugthrower. An antiquated SHI design. Requires manual reloading after expending magazine.
   components:
-  - type: Destructible
-    thresholds:
-    - trigger:
-        !type:DamageTrigger
-        damage: 150
-      behaviors:
-      - !type:ChangeConstructionNodeBehavior
-        node: machineFrame
-      - !type:DoActsBehavior
-        acts: ["Destruction"]
   - type: Sprite
     sprite: _Hullrot/Objects/ShuttleWeapons/artillery.rsi
     layers:
@@ -140,10 +112,30 @@
 # base
 - type: entity
   id: BallisticArtillery
-  parent: BaseMachinePowered
+  abstract: true
   placement:
     mode: SnapgridCenter
   components:
+  - type: Damageable
+    damageContainer: StructuralInorganic
+    damageModifierSet: StructuralMetallic
+  - type: Destructible
+    thresholds:
+    - trigger:
+        !type:DamageTrigger
+        damage: 200
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+    - trigger:
+        !type:DamageTrigger
+        damage: 100
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+      - !type:PlaySoundBehavior
+        sound:
+          collection: MetalBreak
   - type: Clickable
   - type: InteractionOutline
   - type: Physics
@@ -186,3 +178,5 @@
       ballistic-ammo: !type:Container
       machine_board: !type:Container
       machine_parts: !type:Container
+
+
