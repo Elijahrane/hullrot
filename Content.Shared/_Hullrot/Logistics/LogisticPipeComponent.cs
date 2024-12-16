@@ -8,21 +8,8 @@ namespace Content.Shared._Hullrot.Logistics;
 [RegisterComponent]
 public sealed partial class LogisticPipeComponent : Component
 {
-    
+    public DirectionFlag connectionDirs =
+        DirectionFlag.East | DirectionFlag.West | DirectionFlag.North | DirectionFlag.South;
 }
 
-[Flags]
-[Serializable, NetSerializable]
-public enum PipeDirection
-{
-    None = 0,
-
-    //Half of a pipe in a direction
-    North = 1 << 0,
-    South = 1 << 1,
-    West = 1 << 2,
-    East = 1 << 3,
-    
-    All = -1,
-}
 
