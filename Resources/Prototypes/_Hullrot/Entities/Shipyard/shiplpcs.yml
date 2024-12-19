@@ -1,0 +1,16 @@
+- type: entity
+  parent: BaseItem
+  id: ShipVouchertestship
+  name: DNT 'Test' pattern LPC fabprint disk
+  description: An LPC fabprint disk loaded with an Testator Test-class picket fighter. Has to be redeemed at a shipyard unit.
+  components:
+  - type: Item
+    size: Small
+  - type: Sprite
+    sprite: _Hullrot/Objects/Misc/lpcchip.rsi
+    layers:
+    - state: icon
+  - type: ShipVoucher
+    name: Testship
+    description: a Testator Test-class picket fighter
+    shuttlePath: /testship.yml

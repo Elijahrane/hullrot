@@ -1,26 +1,17 @@
 using System.Numerics;
-using Content.Server.DeviceLinking.Components;
 using Content.Server.DeviceLinking.Events;
 using Content.Server.DeviceLinking.Systems;
 using Content.Server.Power.Components;
 using Content.Server.Power.EntitySystems;
 using Content.Server.Weapons.Ranged.Systems;
 using Content.Shared._Hullrot.SpaceArtillery;
-using Content.Shared.Actions;
 using Content.Shared.Camera;
-using Content.Shared.CombatMode;
-using Content.Shared.Containers.ItemSlots;
 using Content.Shared.DeviceLinking;
-using Content.Shared.Examine;
 using Content.Shared.Power;
 using Content.Shared.Projectiles;
-using Content.Shared.Shuttles.Systems;
 using Content.Shared.Weapons.Ranged.Events;
-using Robust.Shared.Containers;
 using Robust.Shared.Map;
 using Robust.Shared.Player;
-using Robust.Shared.Prototypes;
-using Robust.Shared.Timing;
 using SpaceArtilleryComponent = Content.Server._Hullrot.SpaceArtillery.Components.SpaceArtilleryComponent;
 
 namespace Content.Server._Hullrot.SpaceArtillery;
