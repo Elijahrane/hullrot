@@ -140,6 +140,12 @@ public sealed class LogisticSystem : EntitySystem
 
         return counter;
     }
+
+    public void RemovePipeFromNetwork(EntityUid pipe, LogisticNetwork network)
+    {
+        network.ConnectedNodes.Remove(pipe);
+        network.PipeCount--;
+    }
     public void QueryLogisticNetwork(LogisticNetwork target, string prototypeId)
     {
         
@@ -157,6 +163,25 @@ public sealed class LogisticSystem : EntitySystem
         network.PipeCount = 1;
         network.NetworkId = networkId;
         networks.Add(networkId, network);
+        return networkId;
+    }
+
+    public int createNetwork(HashSet<EntityUid> pipes)
+    {
+        var networkId = generateNetworkIdentifier();
+        var network = new LogisticNetwork();
+        network.NetworkId = networkId;
+        networks.Add(networkId, network);
+        foreach (var uid in pipes)
+        {
+            if (!TryComp<LogisticPipeComponent>(uid, out var comp))
+                continue;
+            network.ConnectedNodes.Add(uid);
+            network.PipeCount++;
+            comp.NetworkId = networkId;
+        }
+
+        return networkId;
     }
     public int generateNetworkIdentifier()
     {
@@ -222,18 +247,35 @@ public sealed class LogisticSystem : EntitySystem
             TryComp(secondPipe, out secondComponent);
         if (firstComponent is null || secondComponent is null)
             return;
+        var network = networks[firstComponent.NetworkId];
         firstComponent.Connected[firstDir] = null;
         var firstCount = PipeConnectionCount(firstComponent);
         secondComponent.Connected[getReverseDir(firstDir)] = null;
         var secondCount = PipeConnectionCount(secondComponent);
         if(firstCount < 1)
         {
+            RemovePipeFromNetwork(firstPipe, network);
             createNetwork(firstPipe, firstComponent);
-            /// TODO\
+        }
+        else if (secondCount < 1)
+        {
+            RemovePipeFromNetwork(secondPipe, network);
+            createNetwork(secondPipe, secondComponent);
         }
         else
         {
-            
+            var firstPipeCount = getAllPipesConnectedToPoint(firstPipe, firstComponent);
+            var secondPipeCount = getAllPipesConnectedToPoint(secondPipe, secondComponent);
+            if (firstPipeCount.Count > secondPipeCount.Count)
+            {
+                RemovePipeFromNetwork(secondPipe, network);
+                createNetwork(secondPipeCount);
+            }
+            else
+            {
+                RemovePipeFromNetwork(firstPipe, network);
+                createNetwork(firstPipeCount);
+            }
         }
     }
 
