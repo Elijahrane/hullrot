@@ -17,7 +17,6 @@ public sealed class LogisticSystem : EntitySystem
     [Dependency] private readonly MapSystem _mapSystem = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
-    private Random? generatorInstance;
     private List<int> AlreadyGeneratedKeys = new();
     private readonly List<DirectionFlag> connectionDirs = new (4){
         DirectionFlag.North, DirectionFlag.South, DirectionFlag.East, DirectionFlag.West};
@@ -29,14 +28,23 @@ public sealed class LogisticSystem : EntitySystem
     public override void Initialize()
     {
         logisticQuery = new();
-        generatorInstance = _random.GetRandom();
     }
 
     public int generateNetworkIdentifier()
     {
-        var key = generatorInstance?.Next();
+        var key = _random.GetRandom().Next();
         while(AlreadyGeneratedKeys.Contains(key))
-            key = generatorInstance?.Next();
+            key = _random.GetRandom().Next();
+        AlreadyGeneratedKeys.Add(key);
+        return key;
+    }
+
+    public bool removeNetworkIdentifier(int id)
+    {
+        if (!AlreadyGeneratedKeys.Contains(id))
+            return false;
+        AlreadyGeneratedKeys.Remove(id);
+        return true;
     }
 
     public DirectionFlag getReverseDir(DirectionFlag dir)
@@ -128,7 +136,6 @@ public sealed class LogisticSystem : EntitySystem
             }
         }
     }
-
 
     private IEnumerable<Tuple<EntityUid, LogisticPipeComponent>> LogisticPipesInDirection(Vector2i pos, DirectionFlag pipeDir, MapGridComponent grid)
     {
