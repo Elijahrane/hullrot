@@ -1,5 +1,3 @@
-using Content.Server.NodeContainer;
-using Content.Server.NodeContainer.Nodes;
 using Content.Shared._Hullrot.Logistics;
 using Content.Shared.Atmos;
 using Robust.Server.GameObjects;
@@ -24,9 +22,43 @@ public sealed class LogisticSystem : EntitySystem
         logisticQuery = new();
     }
 
+    public DirectionFlag getReverseDir(DirectionFlag dir)
+    {
+        switch (dir)
+        {
+            case DirectionFlag.East :
+                return DirectionFlag.West;
+            case DirectionFlag.West :
+                return DirectionFlag.East;
+            case DirectionFlag.North:
+                return DirectionFlag.South;
+            case DirectionFlag.South:
+                return DirectionFlag.North;
+            default:
+                return DirectionFlag.None;
+        }
+    }
+
+    private void ConnectPipes(EntityUid firstPipe, EntityUid secondPipe, DirectionFlag firstDir,LogisticPipeComponent? firstComponent, LogisticPipeComponent? secondComponent)
+
+    {
+        if(firstComponent is null)
+            TryComp(firstPipe, out firstComponent);
+        if(secondComponent is null)
+            TryComp(secondPipe, out secondComponent);
+        if (firstComponent is null || secondComponent is null)
+            return;
+        firstComponent.Connected[firstDir] = secondPipe;
+        secondComponent.Connected[getReverseDir(firstDir)] = firstPipe;
+        UpdateLogisticPipeAppearance(firstPipe, firstComponent);
+        UpdateLogisticPipeAppearance(secondPipe, secondComponent);
 
 
-    private void UpdateLogisticPipeAppearance(EntityUid targetPipe, LogisticPipeComponent pipeComponent)
+    }
+
+
+
+    private void CheckConnections(EntityUid targetPipe, LogisticPipeComponent pipeComponent)
     {
         var transComp = Transform(targetPipe);
         if (transComp.GridUid is null)
@@ -40,15 +72,24 @@ public sealed class LogisticSystem : EntitySystem
         {
             if ((dir & pipeComponent.connectionDirs) == DirectionFlag.None)
                 continue;
+            if (pipeComponent.Connected[dir] is not null)
+                continue;
             foreach (var pipe in LogisticPipesInDirection(localCoordinates, dir, mapGrid))
             {
+                var reverseDir = getReverseDir(dir);
+                if((pipe.connectionDirs & getReverseDir(dir)) == DirectionFlag.None)
+                    continue;
+                if (pipe.Connected[reverseDir] is not null)
+                    continue;
+                ConnectPipes(targetPipe, pipe);
+                
 
             }
         }
     }
 
 
-    private IEnumerable<LogisticPipeComponent> LogisticPipesInDirection(Vector2i pos, DirectionFlag pipeDir, MapGridComponent grid)
+    private IEnumerable<Tuple<EntityUid, LogisticPipeComponent>> LogisticPipesInDirection(Vector2i pos, DirectionFlag pipeDir, MapGridComponent grid)
     {
         var offsetPos = pos.Offset(DirectionExtensions.AsDir(pipeDir));
 
@@ -57,7 +98,7 @@ public sealed class LogisticSystem : EntitySystem
             if (!logisticQuery.TryGetComponent(entity, out var container))
                 continue;
 
-            yield return container;
+            yield return new (entity, container);
         }
     }
 }

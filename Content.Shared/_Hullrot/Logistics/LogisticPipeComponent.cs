@@ -10,6 +10,8 @@ public sealed partial class LogisticPipeComponent : Component
 {
     public DirectionFlag connectionDirs =
         DirectionFlag.East | DirectionFlag.West | DirectionFlag.North | DirectionFlag.South;
+
+    public Dictionary<DirectionFlag, EntityUid?> Connected;
 }
 
 
