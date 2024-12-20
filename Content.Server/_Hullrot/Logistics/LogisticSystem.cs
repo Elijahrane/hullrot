@@ -146,13 +146,23 @@ public sealed class LogisticSystem : EntitySystem
         network.ConnectedNodes.Remove(pipe);
         network.PipeCount--;
     }
+
+    public void AddPipeToNetwork(EntityUid pipe, LogisticNetwork network)
+    {
+        network.ConnectedNodes.Add(pipe);
+        network.PipeCount++;
+    }
     public void QueryLogisticNetwork(LogisticNetwork target, string prototypeId)
     {
         
     }
     public void OnPipeCreation(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
     {
-
+        CheckConnections(pipe, component);
+        if (component.NetworkId == 0)
+        {
+            createNetwork(pipe, component);
+        }
     }
 
     public int createNetwork(EntityUid pipe, LogisticPipeComponent component)
@@ -228,7 +238,11 @@ public sealed class LogisticSystem : EntitySystem
             return;
         firstComponent.Connected[firstDir] = secondPipe;
         secondComponent.Connected[getReverseDir(firstDir)] = firstPipe;
-        if(firstComponent.NetworkId != secondComponent.NetworkId)
+        if(firstComponent.NetworkId == 0)
+            AddPipeToNetwork(firstPipe, networks[secondComponent.NetworkId]);
+        else if(secondComponent.NetworkId == 0)
+            AddPipeToNetwork(secondPipe, networks[firstComponent.NetworkId]);
+        if (firstComponent.NetworkId != secondComponent.NetworkId)
             MergeLogisticNetworks(networks[firstComponent.NetworkId], networks[secondComponent.NetworkId]);
 
         UpdateLogisticPipeAppearance(firstPipe, firstComponent);
