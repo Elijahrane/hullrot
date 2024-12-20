@@ -33,6 +33,31 @@ public sealed class LogisticSystem : EntitySystem
         SubscribeLocalEvent<LogisticPipeComponent,ComponentInit>(OnPipeCreation);
     }
 
+    public HashSet<EntityUid> getAllPipesConnectedToPoint(EntityUid target , LogisticPipeComponent component)
+    {
+        var NextIteration = new Stack<LogisticPipeComponent>();
+        NextIteration.Push(component);
+        var returnSet = new HashSet<EntityUid>(){target};
+        while (NextIteration.TryPop(out var next))
+        {
+            foreach (var (direction, nextPipe ) in next.Connected)
+            {
+                if (nextPipe is null)
+                    continue;
+                if (!TryComp<LogisticPipeComponent>(nextPipe, out var pipeComp))
+                    continue;
+                if (returnSet.Contains(nextPipe.Value))
+                    continue;
+
+                returnSet.Add(nextPipe.Value);
+                NextIteration.Push(pipeComp);
+
+            }
+        }
+
+        return returnSet;
+    }
+
     public void MergeLogisticNetworks(LogisticNetwork into, LogisticNetwork target)
     {
         var StorageRecordsByPrototypeID = new Dictionary<string, List<StorageRecordById>>();
@@ -91,11 +116,30 @@ public sealed class LogisticSystem : EntitySystem
             }
             replacementStorage.Add(prototype, unifiedRecords);
         }
+
+        var replacementRequestStack = new Stack<EntityRequest>();
+        foreach(var request in into.logisticRequests)
+            replacementRequestStack.Push(request);
+        foreach(var request in target.logisticRequests)
+            replacementRequestStack.Push(request);
+        into.logisticRequests = replacementRequestStack;
+        into.itemsById = replacementStorage;
         into.ConnectedNodes = Nodes;
         into.PipeCount = PipeCount;
 
     }
 
+    public int PipeConnectionCount(LogisticPipeComponent pipeComp)
+    {
+        var counter = 0;
+        foreach (var (dir, entity) in pipeComp.Connected)
+        {
+            if (entity is not null)
+                counter++;
+        }
+
+        return counter;
+    }
     public void QueryLogisticNetwork(LogisticNetwork target, string prototypeId)
     {
         
@@ -103,6 +147,16 @@ public sealed class LogisticSystem : EntitySystem
     public void OnPipeCreation(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
     {
 
+    }
+
+    public int createNetwork(EntityUid pipe, LogisticPipeComponent component)
+    {
+        var networkId = generateNetworkIdentifier();
+        var network = new LogisticNetwork();
+        network.ConnectedNodes.Add(pipe);
+        network.PipeCount = 1;
+        network.NetworkId = networkId;
+        networks.Add(networkId, network);
     }
     public int generateNetworkIdentifier()
     {
@@ -150,21 +204,42 @@ public sealed class LogisticSystem : EntitySystem
         firstComponent.Connected[firstDir] = secondPipe;
         secondComponent.Connected[getReverseDir(firstDir)] = firstPipe;
         if (networks[firstComponent.NetworkId].PipeCount > networks[secondComponent.NetworkId].PipeCount)
+            MergeLogisticNetworks(networks[firstComponent.NetworkId], networks[secondComponent.NetworkId]);
 
         UpdateLogisticPipeAppearance(firstPipe, firstComponent);
         UpdateLogisticPipeAppearance(secondPipe, secondComponent);
     }
 
+    private void DisconnectPipes(EntityUid firstPipe,
+        EntityUid secondPipe,
+        DirectionFlag firstDir,
+        LogisticPipeComponent? firstComponent,
+        LogisticPipeComponent? secondComponent)
+    {
+        if (firstComponent is null)
+            TryComp(firstPipe, out firstComponent);
+        if (secondComponent is null)
+            TryComp(secondPipe, out secondComponent);
+        if (firstComponent is null || secondComponent is null)
+            return;
+        firstComponent.Connected[firstDir] = null;
+        var firstCount = PipeConnectionCount(firstComponent);
+        secondComponent.Connected[getReverseDir(firstDir)] = null;
+        var secondCount = PipeConnectionCount(secondComponent);
+        if(firstCount < 1)
+        {
+            createNetwork(firstPipe, firstComponent);
+            /// TODO\
+        }
+        else
+        {
+            
+        }
+    }
+
     private void UpdateLogisticPipeAppearance(EntityUid targetPipe, LogisticPipeComponent component)
     {
-        var connectionCount = 0;
-        foreach(var (dir,uid) in component.Connected)
-        {
-            if(uid is null)
-                continue;
-            connectionCount++;
-
-        }
+        var connectionCount = PipeConnectionCount(component);
 
         switch (connectionCount)
         {
