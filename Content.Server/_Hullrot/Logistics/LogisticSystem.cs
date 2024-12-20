@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using Robust.Server.GameObjects;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Random;
+using static Content.Shared._Hullrot.Logistics.LogisticNetwork;
 
 namespace Content.Server._Hullrot.Logistics;
 
@@ -34,8 +35,8 @@ public sealed class LogisticSystem : EntitySystem
 
     public void MergeLogisticNetworks(LogisticNetwork into, LogisticNetwork target)
     {
-        var StorageRecordsByPrototypeID = new Dictionary<string, List<LogisticNetwork.StorageRecordById>>();
-        var LogisticRequestsByRequester = new Dictionary<EntityUid, List<LogisticNetwork.EntityRequest>>();
+        var StorageRecordsByPrototypeID = new Dictionary<string, List<StorageRecordById>>();
+        var LogisticRequestsByRequester = new Dictionary<EntityUid, List<EntityRequest>>();
         /// Its a union because we could have logistic bridges present
         var Nodes = into.ConnectedNodes.Union(target.ConnectedNodes).ToList();
         var PipeCount = Nodes.Count;
@@ -44,14 +45,14 @@ public sealed class LogisticSystem : EntitySystem
             if (StorageRecordsByPrototypeID.ContainsKey(prototypeId))
                 StorageRecordsByPrototypeID[prototypeId].Add(LogisticRecord);
             else
-                StorageRecordsByPrototypeID.Add(prototypeId, new List<LogisticNetwork.StorageRecordById>(1){LogisticRecord});
+                StorageRecordsByPrototypeID.Add(prototypeId, new List<StorageRecordById>(1){LogisticRecord});
         }
         foreach (var (prototypeId, LogisticRecord) in target.itemsById)
         {
             if (StorageRecordsByPrototypeID.ContainsKey(prototypeId))
                 StorageRecordsByPrototypeID[prototypeId].Add(LogisticRecord);
             else
-                StorageRecordsByPrototypeID.Add(prototypeId, new List<LogisticNetwork.StorageRecordById>(1) { LogisticRecord });
+                StorageRecordsByPrototypeID.Add(prototypeId, new List<StorageRecordById>(1) { LogisticRecord });
         }
 
         foreach (var request in into.logisticRequests)
@@ -60,7 +61,7 @@ public sealed class LogisticSystem : EntitySystem
                 LogisticRequestsByRequester[request.requester].Add(request);
             else
             {
-                LogisticRequestsByRequester.Add(request.requester, new List<LogisticNetwork.EntityRequest>(1){request});
+                LogisticRequestsByRequester.Add(request.requester, new List<EntityRequest>(1){request});
             }
         }
 
@@ -70,10 +71,29 @@ public sealed class LogisticSystem : EntitySystem
                 LogisticRequestsByRequester[request.requester].Add(request);
             else
             {
-                LogisticRequestsByRequester.Add(request.requester, new List<LogisticNetwork.EntityRequest>(1) { request });
+                LogisticRequestsByRequester.Add(request.requester, new List<EntityRequest>(1) { request });
             }
         }
-        
+
+        var replacementStorage = new Dictionary<string, StorageRecordById>();
+        foreach (var (prototype, list) in StorageRecordsByPrototypeID)
+        {
+            var unifiedRecords = new StorageRecordById(prototype);
+            foreach (var record in list)
+            {
+                foreach (var (storageEntity, amount) in record.Providers)
+                {
+                    if (unifiedRecords.Providers.ContainsKey(storageEntity))
+                        continue;
+                    unifiedRecords.Providers.Add(storageEntity, amount);
+                    unifiedRecords.TotalAmount += amount;
+                }
+            }
+            replacementStorage.Add(prototype, unifiedRecords);
+        }
+        into.ConnectedNodes = Nodes;
+        into.PipeCount = PipeCount;
+
     }
 
     public void QueryLogisticNetwork(LogisticNetwork target, string prototypeId)

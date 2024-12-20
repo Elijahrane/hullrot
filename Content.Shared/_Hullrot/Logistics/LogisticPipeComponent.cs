@@ -23,12 +23,6 @@ public sealed partial class LogisticPipeComponent : Component
 public class LogisticNetwork
 {
     #region InternalClasses
-
-    public class PipeLink
-    {
-        public EntityUid firstPipe;
-        public EntityUid secondPipe;
-    }
     public class EntityRequest
     {
         public readonly EntityUid requester;
@@ -84,7 +78,6 @@ public class LogisticNetwork
 
     public List<EntityUid> ConnectedNodes = new();
 
-    public HashSet<PipeLink> PipeLinks = new();
 
     public int PipeCount = 0;
 
