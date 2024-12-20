@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Content.Shared._Hullrot.Logistics;
 using Content.Shared.Atmos;
 using Content.Shared.Random;
@@ -35,6 +36,9 @@ public sealed class LogisticSystem : EntitySystem
     {
         var StorageRecordsByPrototypeID = new Dictionary<string, List<LogisticNetwork.StorageRecordById>>();
         var LogisticRequestsByRequester = new Dictionary<EntityUid, List<LogisticNetwork.EntityRequest>>();
+        /// Its a union because we could have logistic bridges present
+        var Nodes = into.ConnectedNodes.Union(target.ConnectedNodes).ToList();
+        var PipeCount = Nodes.Count;
         foreach (var (prototypeId, LogisticRecord) in into.itemsById)
         {
             if (StorageRecordsByPrototypeID.ContainsKey(prototypeId))
@@ -69,6 +73,7 @@ public sealed class LogisticSystem : EntitySystem
                 LogisticRequestsByRequester.Add(request.requester, new List<LogisticNetwork.EntityRequest>(1) { request });
             }
         }
+        
     }
 
     public void QueryLogisticNetwork(LogisticNetwork target, string prototypeId)
