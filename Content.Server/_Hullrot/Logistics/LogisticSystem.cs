@@ -1,7 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using Content.Shared._Hullrot.Logistics;
 using Content.Shared.Atmos;
+using Content.Shared.Random;
+using JetBrains.Annotations;
 using Robust.Server.GameObjects;
 using Robust.Shared.Map.Components;
+using Robust.Shared.Random;
 
 namespace Content.Server._Hullrot.Logistics;
 
@@ -12,14 +16,27 @@ public sealed class LogisticSystem : EntitySystem
 {
     [Dependency] private readonly MapSystem _mapSystem = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
+    [Dependency] private readonly IRobustRandom _random = default!;
+    private Random? generatorInstance;
+    private List<int> AlreadyGeneratedKeys = new();
     private readonly List<DirectionFlag> connectionDirs = new (4){
         DirectionFlag.North, DirectionFlag.South, DirectionFlag.East, DirectionFlag.West};
 
     private EntityQuery<LogisticPipeComponent> logisticQuery;
+
+    private List<LogisticNetwork> networks = new List<LogisticNetwork>();
     /// <inheritdoc/>
     public override void Initialize()
     {
         logisticQuery = new();
+        generatorInstance = _random.GetRandom();
+    }
+
+    public int generateNetworkIdentifier()
+    {
+        var key = generatorInstance?.Next();
+        while(AlreadyGeneratedKeys.Contains(key))
+            key = generatorInstance?.Next();
     }
 
     public DirectionFlag getReverseDir(DirectionFlag dir)
@@ -52,8 +69,32 @@ public sealed class LogisticSystem : EntitySystem
         secondComponent.Connected[getReverseDir(firstDir)] = firstPipe;
         UpdateLogisticPipeAppearance(firstPipe, firstComponent);
         UpdateLogisticPipeAppearance(secondPipe, secondComponent);
+    }
 
+    private void UpdateLogisticPipeAppearance(EntityUid targetPipe, LogisticPipeComponent component)
+    {
+        var connectionCount = 0;
+        foreach(var (dir,uid) in component.Connected)
+        {
+            if(uid is null)
+                continue;
+            connectionCount++;
 
+        }
+
+        switch (connectionCount)
+        {
+            case 0:
+                return;
+            case 1:
+                return;
+            case 2:
+                return;
+            case 3:
+                return;
+            case 4:
+                return;
+        }
     }
 
 
@@ -77,12 +118,12 @@ public sealed class LogisticSystem : EntitySystem
             foreach (var pipe in LogisticPipesInDirection(localCoordinates, dir, mapGrid))
             {
                 var reverseDir = getReverseDir(dir);
-                if((pipe.connectionDirs & getReverseDir(dir)) == DirectionFlag.None)
+                if ((pipe.Item2.connectionDirs & getReverseDir(dir)) == DirectionFlag.None)
                     continue;
-                if (pipe.Connected[reverseDir] is not null)
+                if (pipe.Item2.Connected[reverseDir] is not null)
                     continue;
-                ConnectPipes(targetPipe, pipe);
-                
+                ConnectPipes(targetPipe, pipe.Item1, dir, pipeComponent, pipe.Item2);
+                break;
 
             }
         }
