@@ -13,6 +13,8 @@ public sealed partial class LogisticPipeComponent : Component
         DirectionFlag.East | DirectionFlag.West | DirectionFlag.North | DirectionFlag.South;
 
     public Dictionary<DirectionFlag, EntityUid?> Connected;
+
+    public int NetworkId = 0;
 }
 
 
@@ -71,6 +73,8 @@ public class LogisticNetwork
     public Stack<EntityRequest> logisticRequests = new();
 
     public Dictionary<string, StorageRecordById> itemsById = new();
+
+    public List<EntityUid> ConnectedNodes = new();
 
     public int PipeCount = 0;
 

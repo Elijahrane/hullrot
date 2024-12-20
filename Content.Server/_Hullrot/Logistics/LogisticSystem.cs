@@ -23,13 +23,62 @@ public sealed class LogisticSystem : EntitySystem
 
     private EntityQuery<LogisticPipeComponent> logisticQuery;
 
-    private List<LogisticNetwork> networks = new List<LogisticNetwork>();
+    private Dictionary<int, LogisticNetwork> networks = new();
     /// <inheritdoc/>
     public override void Initialize()
     {
         logisticQuery = new();
+        SubscribeLocalEvent<LogisticPipeComponent,ComponentInit>(OnPipeCreation);
     }
 
+    public void MergeLogisticNetworks(LogisticNetwork into, LogisticNetwork target)
+    {
+        var StorageRecordsByPrototypeID = new Dictionary<string, List<LogisticNetwork.StorageRecordById>>();
+        var LogisticRequestsByRequester = new Dictionary<EntityUid, List<LogisticNetwork.EntityRequest>>();
+        foreach (var (prototypeId, LogisticRecord) in into.itemsById)
+        {
+            if (StorageRecordsByPrototypeID.ContainsKey(prototypeId))
+                StorageRecordsByPrototypeID[prototypeId].Add(LogisticRecord);
+            else
+                StorageRecordsByPrototypeID.Add(prototypeId, new List<LogisticNetwork.StorageRecordById>(1){LogisticRecord});
+        }
+        foreach (var (prototypeId, LogisticRecord) in target.itemsById)
+        {
+            if (StorageRecordsByPrototypeID.ContainsKey(prototypeId))
+                StorageRecordsByPrototypeID[prototypeId].Add(LogisticRecord);
+            else
+                StorageRecordsByPrototypeID.Add(prototypeId, new List<LogisticNetwork.StorageRecordById>(1) { LogisticRecord });
+        }
+
+        foreach (var request in into.logisticRequests)
+        {
+            if(LogisticRequestsByRequester.ContainsKey(request.requester))
+                LogisticRequestsByRequester[request.requester].Add(request);
+            else
+            {
+                LogisticRequestsByRequester.Add(request.requester, new List<LogisticNetwork.EntityRequest>(1){request});
+            }
+        }
+
+        foreach (var request in target.logisticRequests)
+        {
+            if (LogisticRequestsByRequester.ContainsKey(request.requester))
+                LogisticRequestsByRequester[request.requester].Add(request);
+            else
+            {
+                LogisticRequestsByRequester.Add(request.requester, new List<LogisticNetwork.EntityRequest>(1) { request });
+            }
+        }
+    }
+
+    public void QueryLogisticNetwork(LogisticNetwork target, string prototypeId)
+    {
+        
+    }
+    public void OnPipeCreation(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
+    {
+
+    }
     public int generateNetworkIdentifier()
     {
         var key = _random.GetRandom().Next();
@@ -75,6 +124,8 @@ public sealed class LogisticSystem : EntitySystem
             return;
         firstComponent.Connected[firstDir] = secondPipe;
         secondComponent.Connected[getReverseDir(firstDir)] = firstPipe;
+        if (networks[firstComponent.NetworkId].PipeCount > networks[secondComponent.NetworkId].PipeCount)
+
         UpdateLogisticPipeAppearance(firstPipe, firstComponent);
         UpdateLogisticPipeAppearance(secondPipe, secondComponent);
     }
