@@ -228,7 +228,7 @@ public sealed class LogisticSystem : EntitySystem
             return;
         firstComponent.Connected[firstDir] = secondPipe;
         secondComponent.Connected[getReverseDir(firstDir)] = firstPipe;
-        if (networks[firstComponent.NetworkId].PipeCount > networks[secondComponent.NetworkId].PipeCount)
+        if(firstComponent.NetworkId != secondComponent.NetworkId)
             MergeLogisticNetworks(networks[firstComponent.NetworkId], networks[secondComponent.NetworkId]);
 
         UpdateLogisticPipeAppearance(firstPipe, firstComponent);
@@ -277,6 +277,8 @@ public sealed class LogisticSystem : EntitySystem
                 createNetwork(firstPipeCount);
             }
         }
+        UpdateLogisticPipeAppearance(firstPipe, firstComponent);
+        UpdateLogisticPipeAppearance(secondPipe, secondComponent);
     }
 
     private void UpdateLogisticPipeAppearance(EntityUid targetPipe, LogisticPipeComponent component)
