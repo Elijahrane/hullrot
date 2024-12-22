@@ -152,10 +152,6 @@ public sealed class LogisticSystem : EntitySystem
         network.ConnectedNodes.Add(pipe);
         network.PipeCount++;
     }
-    public void QueryLogisticNetwork(LogisticNetwork target, string prototypeId)
-    {
-        
-    }
     public void OnPipeCreation(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
     {
         CheckConnections(pipe, component);
