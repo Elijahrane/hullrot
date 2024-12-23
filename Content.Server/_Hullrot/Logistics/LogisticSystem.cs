@@ -20,6 +20,8 @@ public sealed class LogisticSystem : EntitySystem
     [Dependency] private readonly TransformSystem _transformSystem = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
     private List<int> AlreadyGeneratedKeys = new();
+    [Dependency] private readonly AppearanceSystem _appearance = default!;
+
     private readonly List<DirectionFlag> connectionDirs = new (4){
         DirectionFlag.North, DirectionFlag.South, DirectionFlag.East, DirectionFlag.West};
 
@@ -29,7 +31,6 @@ public sealed class LogisticSystem : EntitySystem
     /// <inheritdoc/>
     public override void Initialize()
     {
-        logisticQuery = new();
         SubscribeLocalEvent<LogisticPipeComponent,ComponentInit>(OnPipeCreation);
     }
 
@@ -154,6 +155,14 @@ public sealed class LogisticSystem : EntitySystem
     }
     public void OnPipeCreation(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
     {
+        foreach(var connectionDir in connectionDirs)
+        {
+            if((connectionDir & component.connectionDirs) != DirectionFlag.None)
+            {
+                component.Connected.Add(connectionDir, null);
+            }
+
+        }
         CheckConnections(pipe, component);
         if (component.NetworkId == 0)
         {
@@ -168,6 +177,7 @@ public sealed class LogisticSystem : EntitySystem
         network.ConnectedNodes.Add(pipe);
         network.PipeCount = 1;
         network.NetworkId = networkId;
+        component.NetworkId = networkId;
         networks.Add(networkId, network);
         return networkId;
     }
@@ -298,6 +308,7 @@ public sealed class LogisticSystem : EntitySystem
         switch (connectionCount)
         {
             case 0:
+                //_appearance.SetData(uid, PipeVisuals.VisualState, netConnectedDirections, appearance);
                 return;
             case 1:
                 return;
@@ -328,7 +339,8 @@ public sealed class LogisticSystem : EntitySystem
                 continue;
             if (pipeComponent.Connected[dir] is not null)
                 continue;
-            foreach (var pipe in LogisticPipesInDirection(localCoordinates, dir, mapGrid))
+            logisticQuery = new();
+            foreach (var pipe in LogisticPipesInDirection(localCoordinates, dir, mapGrid, transComp.GridUid.Value))
             {
                 var reverseDir = getReverseDir(dir);
                 if ((pipe.Item2.connectionDirs & getReverseDir(dir)) == DirectionFlag.None)
@@ -342,11 +354,10 @@ public sealed class LogisticSystem : EntitySystem
         }
     }
 
-    private IEnumerable<Tuple<EntityUid, LogisticPipeComponent>> LogisticPipesInDirection(Vector2i pos, DirectionFlag pipeDir, MapGridComponent grid)
+    private IEnumerable<Tuple<EntityUid, LogisticPipeComponent>> LogisticPipesInDirection(Vector2i pos, DirectionFlag pipeDir, MapGridComponent grid, EntityUid mapUid)
     {
         var offsetPos = pos.Offset(DirectionExtensions.AsDir(pipeDir));
-
-        foreach (var entity in grid.GetAnchoredEntities(offsetPos))
+        foreach (var entity in _mapSystem.GetAnchoredEntities(mapUid, grid, pos))
         {
             if (!logisticQuery.TryGetComponent(entity, out var container))
                 continue;

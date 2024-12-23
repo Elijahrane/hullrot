@@ -9,14 +9,26 @@ namespace Content.Shared._Hullrot.Logistics;
 [RegisterComponent]
 public sealed partial class LogisticPipeComponent : Component
 {
+    [DataField, ViewVariables]
     public DirectionFlag connectionDirs =
         DirectionFlag.East | DirectionFlag.West | DirectionFlag.North | DirectionFlag.South;
 
+    [DataField, ViewVariables]
     public Dictionary<DirectionFlag, EntityUid?> Connected = new();
 
+    [DataField, ViewVariables]
     public int NetworkId = 0;
 }
 
+[Serializable, NetSerializable]
+enum LogisticVisualLayout
+{
+    way0,
+    way1,
+    way2,
+    way3,
+    way4
+}
 
 public class LogisticNetwork
 {
