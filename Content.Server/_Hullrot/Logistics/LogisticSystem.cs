@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Content.Server.Chat.Managers;
 using Content.Shared._Hullrot.Logistics;
 using Content.Shared.Atmos;
 using Content.Shared.Random;
@@ -19,6 +20,7 @@ public sealed class LogisticSystem : EntitySystem
     [Dependency] private readonly MapSystem _mapSystem = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
+    [Dependency] private readonly IChatManager _chat = default!;
     private List<int> AlreadyGeneratedKeys = new();
     [Dependency] private readonly AppearanceSystem _appearance = default!;
 
@@ -32,6 +34,48 @@ public sealed class LogisticSystem : EntitySystem
     public override void Initialize()
     {
         SubscribeLocalEvent<LogisticPipeComponent,ComponentInit>(OnPipeCreation);
+        SubscribeLocalEvent<LogisticPipeComponent, AnchorStateChangedEvent>(OnAnchorChange);
+    }
+
+    public void OnAnchorChange(EntityUid entity, LogisticPipeComponent pipeComponent, AnchorStateChangedEvent args)
+    {
+        if (args.Anchored == false)
+            DisconnectFromAllPipes(entity, pipeComponent);
+        else
+            CheckConnections(entity, pipeComponent);
+    }
+
+    public void DisconnectFromAllPipes(EntityUid entity, LogisticPipeComponent pipeComponent)
+    {
+        var transComp = Transform(entity);
+        if (transComp.GridUid is null)
+            return;
+        if (Deleted(transComp.GridUid))
+            return;
+        if (!TryComp<MapGridComponent>(transComp.GridUid, out var mapGrid))
+            return;
+        var localCoordinates = _transformSystem.GetGridOrMapTilePosition(entity, transComp);
+        foreach (var dir in connectionDirs)
+        {
+            if ((dir & pipeComponent.connectionDirs) == DirectionFlag.None)
+                continue;
+            if (pipeComponent.Connected[dir] is null)
+                continue;
+            foreach (var pipe in LogisticPipesInDirection(localCoordinates, dir, mapGrid, transComp.GridUid.Value))
+            {
+                var reverseDir = getReverseDir(dir);
+                if ((pipe.Item2.connectionDirs & getReverseDir(dir)) == DirectionFlag.None)
+                    continue;
+                if (pipe.Item2.Connected[reverseDir] is null)
+                    continue;
+                if (pipe.Item2.Connected[reverseDir] != entity)
+                    continue;
+                DisconnectPipes(entity, pipe.Item1, dir, pipeComponent, pipe.Item2);
+                break;
+
+            }
+        }
+        pipeComponent.NetworkId = 0;
     }
 
     public HashSet<EntityUid> getAllPipesConnectedToPoint(EntityUid target , LogisticPipeComponent component)
@@ -123,6 +167,12 @@ public sealed class LogisticSystem : EntitySystem
             replacementRequestStack.Push(request);
         foreach(var request in target.logisticRequests)
             replacementRequestStack.Push(request);
+        foreach(var pipe in Nodes)
+        {
+            if (!TryComp<LogisticPipeComponent>(pipe, out var pipeComp))
+                continue;
+            pipeComp.NetworkId = into.NetworkId;
+        }
         into.logisticRequests = replacementRequestStack;
         into.itemsById = replacementStorage;
         into.ConnectedNodes = Nodes;
@@ -146,15 +196,19 @@ public sealed class LogisticSystem : EntitySystem
     {
         network.ConnectedNodes.Remove(pipe);
         network.PipeCount--;
+        _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} removed from {network.NetworkId} network", $"{pipe} removed from {network.NetworkId} network", pipe, false, false);
     }
 
     public void AddPipeToNetwork(EntityUid pipe, LogisticNetwork network)
     {
         network.ConnectedNodes.Add(pipe);
         network.PipeCount++;
+        _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} added to {network.NetworkId} network", $"{pipe} added to {network.NetworkId} network", pipe, false, false);
     }
     public void OnPipeCreation(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
     {
+        if (Transform(pipe).Anchored == false)
+            return;
         foreach(var connectionDir in connectionDirs)
         {
             if((connectionDir & component.connectionDirs) != DirectionFlag.None)
@@ -244,12 +298,21 @@ public sealed class LogisticSystem : EntitySystem
             return;
         firstComponent.Connected[firstDir] = secondPipe;
         secondComponent.Connected[getReverseDir(firstDir)] = firstPipe;
-        if(firstComponent.NetworkId == 0)
+        if (firstComponent.NetworkId == 0)
+        {
+            firstComponent.NetworkId = secondComponent.NetworkId;
             AddPipeToNetwork(firstPipe, networks[secondComponent.NetworkId]);
-        else if(secondComponent.NetworkId == 0)
+        }
+        else if (secondComponent.NetworkId == 0)
+        {
+            secondComponent.NetworkId = firstComponent.NetworkId;
             AddPipeToNetwork(secondPipe, networks[firstComponent.NetworkId]);
-        if (firstComponent.NetworkId != secondComponent.NetworkId)
+        }
+
+        else if (firstComponent.NetworkId != secondComponent.NetworkId)
+        {
             MergeLogisticNetworks(networks[firstComponent.NetworkId], networks[secondComponent.NetworkId]);
+        }
 
         UpdateLogisticPipeAppearance(firstPipe, firstComponent);
         UpdateLogisticPipeAppearance(secondPipe, secondComponent);
@@ -339,7 +402,6 @@ public sealed class LogisticSystem : EntitySystem
                 continue;
             if (pipeComponent.Connected[dir] is not null)
                 continue;
-            logisticQuery = new();
             foreach (var pipe in LogisticPipesInDirection(localCoordinates, dir, mapGrid, transComp.GridUid.Value))
             {
                 var reverseDir = getReverseDir(dir);
@@ -357,9 +419,9 @@ public sealed class LogisticSystem : EntitySystem
     private IEnumerable<Tuple<EntityUid, LogisticPipeComponent>> LogisticPipesInDirection(Vector2i pos, DirectionFlag pipeDir, MapGridComponent grid, EntityUid mapUid)
     {
         var offsetPos = pos.Offset(DirectionExtensions.AsDir(pipeDir));
-        foreach (var entity in _mapSystem.GetAnchoredEntities(mapUid, grid, pos))
+        foreach (var entity in _mapSystem.GetAnchoredEntities(mapUid, grid, offsetPos))
         {
-            if (!logisticQuery.TryGetComponent(entity, out var container))
+            if(!TryComp<LogisticPipeComponent>(entity, out var container))
                 continue;
 
             yield return new (entity, container);
