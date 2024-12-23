@@ -12,6 +12,9 @@ public sealed partial class ShipVoucherComponent : Component
     [DataField("name")]
     public string Name;
 
+    [DataField("suffix")]
+    public string NameSuffix;
+
     /// <summary>
     ///     Short description of the vessel.
     /// </summary>

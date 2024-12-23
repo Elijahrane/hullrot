@@ -28,15 +28,15 @@
           True: {visible: true}
           False: {visible: false}
   - type: Shipyard
-    targetIdSlot:
+    TargetDeedSlot:
       ejectSound: /Audio/Machines/id_swipe.ogg
       insertSound: /Audio/Weapons/Guns/MagIn/batrifle_magin.ogg
       ejectOnBreak: true
       swap: true
       whitelist:
         components:
-        - IdCard
-    targetLPCSlot:
+        - ShuttleDeed
+    TargetLPCSlot:
       ejectSound: /Audio/Machines/id_swipe.ogg
       insertSound: /Audio/Weapons/Guns/MagIn/batrifle_magin.ogg
       ejectOnBreak: true
@@ -44,8 +44,14 @@
       whitelist:
         components:
         - ShipVoucher
+  - type: ActivatableUI
+    key: enum.ShipyardUiKey.Key
+  - type: UserInterface
+    interfaces:
+      enum.ShipyardUiKey.Key:
+        type: ShipyardBoundUserInterface
   - type: ItemSlots
   - type: ContainerContainer
     containers:
-      Shipyard-targetId: !type:ContainerSlot
-      Shipyard-targetLPC: !type:ContainerSlot
+      Shipyard-TargetDeed: !type:ContainerSlot
+      Shipyard-TargetLPC: !type:ContainerSlot

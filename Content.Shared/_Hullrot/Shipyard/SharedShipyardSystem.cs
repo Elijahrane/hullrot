@@ -19,13 +19,13 @@ public abstract class SharedShipyardSystem : EntitySystem
 
     private void OnComponentInit(EntityUid uid, ShipyardComponent component, ComponentInit args)
     {
-        _itemSlotsSystem.AddItemSlot(uid, ShipyardComponent.TargetIdCardSlotId, component.TargetIdSlot);
+        _itemSlotsSystem.AddItemSlot(uid, ShipyardComponent.TargetDeedCardSlotId, component.TargetDeedSlot);
         _itemSlotsSystem.AddItemSlot(uid, ShipyardComponent.TargetLPCSlotId, component.TargetLPCSlot);
     }
 
     private void OnComponentRemove(EntityUid uid, ShipyardComponent component, ComponentRemove args)
     {
-        _itemSlotsSystem.RemoveItemSlot(uid, component.TargetIdSlot);
+        _itemSlotsSystem.RemoveItemSlot(uid, component.TargetDeedSlot);
         _itemSlotsSystem.RemoveItemSlot(uid, component.TargetLPCSlot);
     }
 }

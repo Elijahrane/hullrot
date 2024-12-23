@@ -1,19 +1,20 @@
 using Content.Shared.Containers.ItemSlots;
 using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
+using Robust.Shared.Serialization;
 
 namespace Content.Shared._Hullrot.Shipyard;
 
 [RegisterComponent, NetworkedComponent, Access(typeof(SharedShipyardSystem))]
 public sealed partial class ShipyardComponent : Component
 {
-    public static string TargetIdCardSlotId = "Shipyard-targetId";
-    public static string TargetLPCSlotId = "Shipyard-targetLPC";
+    public static string TargetDeedCardSlotId = "Shipyard-TargetDeed";
+    public static string TargetLPCSlotId = "Shipyard-TargetLPC";
 
-    [DataField("targetIdSlot")]
-    public ItemSlot TargetIdSlot = new();
+    [DataField("TargetDeedSlot")]
+    public ItemSlot TargetDeedSlot = new();
 
-    [DataField("targetLPCSlot")]
+    [DataField("TargetLPCSlot")]
     public ItemSlot TargetLPCSlot = new();
 
     [DataField("soundError")]
@@ -24,4 +25,11 @@ public sealed partial class ShipyardComponent : Component
     public SoundSpecifier ConfirmSound =
         new SoundPathSpecifier("/Audio/Effects/Cargo/ping.ogg");
 
+}
+
+
+[Serializable, NetSerializable]
+public enum ShipyardUiKey : byte
+{
+    Key
 }

@@ -11,6 +11,18 @@
     layers:
     - state: icon
   - type: ShipVoucher
-    name: Testship
+    name: Test
+    suffix: DNT
     description: a Testator Test-class picket fighter
     shuttlePath: /testship.yml
+
+- type: entity
+  parent: BaseItem
+  id: ShuttleOwnershipChip
+  name: SOC encryption chip
+  description: A 'Shuttle Ownership Chip' magnetically burned with the ownership deed of a sovereign vessel.
+  components:
+  - type: Sprite
+    sprite: _Hullrot/Objects/Misc/shuttledeed.rsi
+    layers:
+    - state: ShipDeed
