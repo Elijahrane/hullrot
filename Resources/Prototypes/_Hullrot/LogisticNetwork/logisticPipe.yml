@@ -28,43 +28,26 @@
     sprite: Hullrot\LogisticNetworks\LogisticPipes.rsi
     layers:
     - state: 0way
-      map: [ "enum.LogisticVisualLayout.way0" ]
-    - state: 1way
-      map: [ "enum.LogisticVisualLayout.way1" ]
-      visible: false
-    - state: 2way
-      map: [ "enum.LogisticVisualLayout.way2" ]
-      visible: false
-    - state: 3way
-      map: [ "enum.LogisticVisualLayout.way3" ]
-      visible: false
-    - state: 4way
-      map: [ "enum.LogisticVisualLayout.way4" ]
-      visible: false
+      map: [ "enum.LogisticVisualLayout.baseLayer" ]
   - type: LogisticPipe
   - type: Appearance
   - type: GenericVisualizer
     visuals:
       enum.LogisticVisualLayout.way0:
-        enum.LogisticVisualLayout.way0:
-          True: {visible: true}
-          False: {visible: false}
+        enum.LogisticVisualLayout.baseLayer:
+          True: {state: 0way}
       enum.LogisticVisualLayout.way1:
-        enum.LogisticVisualLayout.way1:
-          True: {visible: true}
-          False: {visible: false}
+        enum.LogisticVisualLayout.baseLayer:
+          True: {state: 1way}
       enum.LogisticVisualLayout.way2:
-        enum.LogisticVisualLayout.way2:
-          True: {visible: true}
-          False: {visible: false}
+        enum.LogisticVisualLayout.baseLayer:
+          True: {state: 2way}
       enum.LogisticVisualLayout.way3:
-        enum.LogisticVisualLayout.way3:
-          True: {visible: true}
-          False: {visible: false}
+        enum.LogisticVisualLayout.baseLayer:
+          True: {state: 3way}
       enum.LogisticVisualLayout.way4:
-        enum.LogisticVisualLayout.way4:
-          True: {visible: true}
-          False: {visible: false}
+        enum.LogisticVisualLayout.baseLayer:
+          True: {state: 4way}
   - type: Physics
     canCollide: false
     bodyType: static

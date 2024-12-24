@@ -366,7 +366,17 @@ public sealed class LogisticSystem : EntitySystem
 
     private void UpdateLogisticPipeAppearance(EntityUid targetPipe, LogisticPipeComponent component)
     {
-        var connectionCount = PipeConnectionCount(component);
+        var connectionCount = 0;
+        var connectedDirs = DirectionFlag.None;
+        foreach(var dir in connectionDirs)
+        {
+            if ((dir & component.connectionDirs) == DirectionFlag.None)
+                continue;
+            if (component.Connected[dir] is null)
+                continue;
+            connectionCount++;
+            connectedDirs |= dir;
+        }
         var transComp = Transform(targetPipe);
 
         switch (connectionCount)
@@ -375,13 +385,64 @@ public sealed class LogisticSystem : EntitySystem
                 _appearance.SetData(targetPipe, LogisticVisualLayout.way0, true);
                 return;
             case 1:
+                switch(connectedDirs)
+                {
+                    case DirectionFlag.South:
+                    case DirectionFlag.North:
+                        _appearance.SetData(targetPipe, LogisticVisualLayout.way1, true);
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.North);
+                        return;
+                    case DirectionFlag.East:
+                    case DirectionFlag.West:
+                        _appearance.SetData(targetPipe, LogisticVisualLayout.way1, true);
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.East);
+                        return;
+
+                }
                 _appearance.SetData(targetPipe, LogisticVisualLayout.way1, true);
                 return;
             case 2:
-                _appearance.SetData(targetPipe, LogisticVisualLayout.way2, true);
-                return;
+                switch(connectedDirs)
+                {
+                    case DirectionFlag.SouthEast:
+                        _appearance.SetData(targetPipe, LogisticVisualLayout.way2, true);
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.East);
+                        return;
+                    case DirectionFlag.NorthWest:
+                        _appearance.SetData(targetPipe, LogisticVisualLayout.way2, true);
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.West);
+                        return;
+                    case DirectionFlag.SouthWest:
+                        _appearance.SetData(targetPipe, LogisticVisualLayout.way2, true);
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.South);
+                        return;
+                    case DirectionFlag.NorthEast:
+                        _appearance.SetData(targetPipe, LogisticVisualLayout.way2, true);
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.North);
+                        return;
+                    case (DirectionFlag.North | DirectionFlag.South):
+                        _appearance.SetData(targetPipe, LogisticVisualLayout.way1, true);
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.North);
+                        return;
+                    case (DirectionFlag.East | DirectionFlag.West):
+                        _appearance.SetData(targetPipe, LogisticVisualLayout.way1, true);
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.East);
+                        return;
+                    default:
+                        return;
+                }
             case 3:
                 _appearance.SetData(targetPipe, LogisticVisualLayout.way3, true);
+                if ((connectedDirs & DirectionFlag.North) != DirectionFlag.None && (connectedDirs & DirectionFlag.South) != DirectionFlag.None)
+                    if ((connectedDirs & DirectionFlag.East) != DirectionFlag.None)
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.East);
+                    else
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.West);
+                else
+                    if ((connectedDirs & DirectionFlag.South) != DirectionFlag.None)
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.South);
+                    else
+                        transComp.LocalRotation = DirectionExtensions.ToAngle(Direction.North);
                 return;
             case 4:
                 _appearance.SetData(targetPipe, LogisticVisualLayout.way4, true);

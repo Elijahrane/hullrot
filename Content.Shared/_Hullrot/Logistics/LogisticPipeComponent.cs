@@ -23,6 +23,7 @@ public sealed partial class LogisticPipeComponent : Component
 [Serializable, NetSerializable]
 public enum LogisticVisualLayout
 {
+    baseLayer,
     way0,
     way1,
     way2,
