@@ -15,7 +15,6 @@
     damageModifierSet: Metallic
   - type: SubFloorHide
   - type: CollideOnAnchor
-  - type: PipeAppearance
   - type: Anchorable
   - type: Destructible
     thresholds:
@@ -25,43 +24,47 @@
       behaviors:
       - !type:DoActsBehavior
         acts: ["Destruction"]
-    - trigger: # regular damage trigger (replace with broken pipe)
-        !type:DamageTrigger
-        damage: 100
-      behaviors:
-      - !type:PlaySoundBehavior
-        sound:
-          collection: MetalBreak
-          params:
-            volume: -8
-      - !type:SpawnEntitiesBehavior
-        spawn:
-          GasPipeBroken:
-            min: 1
-            max: 1
-        offset: 0
-      - !type:DoActsBehavior
-        acts: ["Breakage"]
   - type: Sprite
     sprite: Hullrot\LogisticNetworks\LogisticPipes.rsi
     layers:
     - state: 0way
-      map: ["enum.LogisticVisualLayout.way0"]
-      visible: false
+      map: [ "enum.LogisticVisualLayout.way0" ]
     - state: 1way
-      map: ["enum.LogisticVisualLayout.way1"]
+      map: [ "enum.LogisticVisualLayout.way1" ]
       visible: false
     - state: 2way
-      map: ["enum.LogisticVisualLayout.way2"]
+      map: [ "enum.LogisticVisualLayout.way2" ]
       visible: false
     - state: 3way
-      map: ["enum.LogisticVisualLayout.way3"]
+      map: [ "enum.LogisticVisualLayout.way3" ]
       visible: false
     - state: 4way
-      map: ["enum.LogisticVisualLayout.way4"]
+      map: [ "enum.LogisticVisualLayout.way4" ]
       visible: false
   - type: LogisticPipe
   - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.LogisticVisualLayout.way0:
+        enum.LogisticVisualLayout.way0:
+          True: {visible: true}
+          False: {visible: false}
+      enum.LogisticVisualLayout.way1:
+        enum.LogisticVisualLayout.way1:
+          True: {visible: true}
+          False: {visible: false}
+      enum.LogisticVisualLayout.way2:
+        enum.LogisticVisualLayout.way2:
+          True: {visible: true}
+          False: {visible: false}
+      enum.LogisticVisualLayout.way3:
+        enum.LogisticVisualLayout.way3:
+          True: {visible: true}
+          False: {visible: false}
+      enum.LogisticVisualLayout.way4:
+        enum.LogisticVisualLayout.way4:
+          True: {visible: true}
+          False: {visible: false}
   - type: Physics
     canCollide: false
     bodyType: static

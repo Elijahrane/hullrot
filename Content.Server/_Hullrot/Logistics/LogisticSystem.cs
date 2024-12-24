@@ -367,19 +367,26 @@ public sealed class LogisticSystem : EntitySystem
     private void UpdateLogisticPipeAppearance(EntityUid targetPipe, LogisticPipeComponent component)
     {
         var connectionCount = PipeConnectionCount(component);
+        var transComp = Transform(targetPipe);
 
         switch (connectionCount)
         {
             case 0:
-                //_appearance.SetData(uid, PipeVisuals.VisualState, netConnectedDirections, appearance);
+                _appearance.SetData(targetPipe, LogisticVisualLayout.way0, true);
                 return;
             case 1:
+                _appearance.SetData(targetPipe, LogisticVisualLayout.way1, true);
                 return;
             case 2:
+                _appearance.SetData(targetPipe, LogisticVisualLayout.way2, true);
                 return;
             case 3:
+                _appearance.SetData(targetPipe, LogisticVisualLayout.way3, true);
                 return;
             case 4:
+                _appearance.SetData(targetPipe, LogisticVisualLayout.way4, true);
+                return;
+            default:
                 return;
         }
     }
