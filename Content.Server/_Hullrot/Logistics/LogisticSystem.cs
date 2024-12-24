@@ -378,6 +378,11 @@ public sealed class LogisticSystem : EntitySystem
             connectedDirs |= dir;
         }
         var transComp = Transform(targetPipe);
+        _appearance.SetData(targetPipe, LogisticVisualLayout.way0, false);
+        _appearance.SetData(targetPipe, LogisticVisualLayout.way1, false);
+        _appearance.SetData(targetPipe, LogisticVisualLayout.way2, false);
+        _appearance.SetData(targetPipe, LogisticVisualLayout.way3, false);
+        _appearance.SetData(targetPipe, LogisticVisualLayout.way4, false);
 
         switch (connectionCount)
         {
