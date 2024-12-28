@@ -17,6 +17,9 @@ public sealed partial class LogisticPipeComponent : Component
     public Dictionary<DirectionFlag, EntityUid?> Connected = new();
 
     [DataField, ViewVariables]
+    public LogisticNodeType nodeFlags = LogisticNodeType.Transporter;
+
+    [DataField, ViewVariables]
     public int NetworkId = 0;
 }
 
@@ -29,6 +32,19 @@ public enum LogisticVisualLayout
     way2,
     way3,
     way4
+}
+[Flags]
+public enum LogisticNodeType
+{
+    Transporter,
+    Storage,
+    Requester
+}
+
+
+public class GetLogisticRequestsEvent : EntityEventArgs
+{
+    public List<LogisticNetwork.EntityRequest> Requests = new();
 }
 
 public class LogisticNetwork
@@ -91,6 +107,9 @@ public class LogisticNetwork
     public List<EntityUid> ConnectedNodes = new();
 
     public List<EntityUid> StorageNodes = new();
+
+    public List<EntityUid> RequesterNodes = new();
+
 
 
     public int PipeCount = 0;

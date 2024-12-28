@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Content.Server.Chat.Managers;
+using Content.Server.Storage.Components;
 using Content.Shared._Hullrot.Logistics;
 using Content.Shared.Atmos;
 using Content.Shared.Random;
@@ -287,6 +288,104 @@ public sealed class LogisticSystem : EntitySystem
         }
     }
 
+    public void updateNetworkStorageData(LogisticNetwork network)
+    {
+        network.itemsById = new Dictionary<string, StorageRecordById>();
+        foreach (var storage in network.StorageNodes)
+        {
+            if (!TryComp<EntityStorageComponent>(storage, out var comp))
+                continue;
+            foreach (var thing in comp.Contents.ContainedEntities)
+            {
+                var key = MetaData(thing).EntityPrototype?.ID;
+                if (key is null)
+                    continue;
+                if (network.itemsById.ContainsKey(key))
+                {
+                    var data = network.itemsById[key];
+                    data.TotalAmount++;
+                    if (data.Providers.ContainsKey(thing))
+                        data.Providers[thing]++;
+                    else
+                        data.Providers.Add(thing, 1);
+                }
+                else
+                {
+                    StorageRecordById data = new(key);
+                    data.TotalAmount = 1;
+                    data.Providers.Add(thing, 1);
+                    network.itemsById.Add(key, data);
+                }
+
+            }
+        }
+    }
+
+    public void updateNetworkRequestData(LogisticNetwork network)
+    {
+        network.logisticRequests = new Stack<EntityRequest>();
+        foreach (var requester in network.RequesterNodes)
+        {
+            GetLogisticRequestsEvent data = new();
+            RaiseLocalEvent(requester, data);
+            foreach (var request in data.Requests)
+                network.logisticRequests.Push(request);
+        }
+    }
+
+    public void rebuildNetworkData(LogisticNetwork network)
+    {
+        network.logisticRequests = new Stack<EntityRequest>();
+        network.StorageNodes = new List<EntityUid>();
+        network.itemsById = new Dictionary<string, StorageRecordById>();
+        network.RequesterNodes = new List<EntityUid>();
+        foreach (var node in network.ConnectedNodes)
+        {
+            if (!TryComp<LogisticPipeComponent>(node, out var comp))
+                continue;
+            if((comp.nodeFlags & LogisticNodeType.Requester) != 0)
+                network.RequesterNodes.Add(node);
+            if((comp.nodeFlags & LogisticNodeType.Storage) != 0)
+                network.StorageNodes.Add(node);
+        }
+
+        foreach (var storage in network.StorageNodes)
+        {
+            if (!TryComp<EntityStorageComponent>(storage, out var comp))
+                continue;
+            foreach (var thing in comp.Contents.ContainedEntities)
+            {
+                var key = MetaData(thing).EntityPrototype?.ID;
+                if (key is null)
+                    continue;
+                if (network.itemsById.ContainsKey(key))
+                {
+                    var data = network.itemsById[key];
+                    data.TotalAmount++;
+                    if (data.Providers.ContainsKey(thing))
+                        data.Providers[thing]++;
+                    else
+                        data.Providers.Add(thing, 1);
+                }
+                else
+                {
+                    StorageRecordById data = new(key);
+                    data.TotalAmount = 1;
+                    data.Providers.Add(thing, 1);
+                    network.itemsById.Add(key, data);
+                }
+
+            }
+        }
+        foreach (var requester in network.RequesterNodes)
+        {
+            GetLogisticRequestsEvent data = new();
+            RaiseLocalEvent(requester, data);
+            foreach(var request in data.Requests)
+                network.logisticRequests.Push(request);
+        }
+    }
+
     private void ConnectPipes(EntityUid firstPipe, EntityUid secondPipe, DirectionFlag firstDir,LogisticPipeComponent? firstComponent, LogisticPipeComponent? secondComponent)
 
     {
@@ -360,6 +459,8 @@ public sealed class LogisticSystem : EntitySystem
                 createNetwork(firstPipeCount);
             }
         }
+        rebuildNetworkData(networks[firstComponent.NetworkId]);
+        rebuildNetworkData(networks[secondComponent.NetworkId]);
         UpdateLogisticPipeAppearance(firstPipe, firstComponent);
         UpdateLogisticPipeAppearance(secondPipe, secondComponent);
     }
