@@ -138,9 +138,12 @@ public sealed class LogisticSystem : EntitySystem
     {
         network.ConnectedNodes.Remove(pipe);
         network.PipeCount--;
+        if (TryComp<LogisticPipeComponent>(pipe, out var comp))
+            comp.network = network;
         if (network.PipeCount == 0)
             removeNetworkIdentifier(network.NetworkId);
             network.Dispose();
+
         _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} removed from {network.NetworkId} network", $"{pipe} removed from {network.NetworkId} network", pipe, false, false);
     }
 
@@ -164,8 +167,6 @@ public sealed class LogisticSystem : EntitySystem
     }
     public void OnPipeCreation(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
     {
-        if (Transform(pipe).Anchored == false)
-            return;
         foreach(var connectionDir in connectionDirs)
         {
             if((connectionDir & component.connectionDirs) != DirectionFlag.None)
@@ -423,6 +424,8 @@ public sealed class LogisticSystem : EntitySystem
 
     private void UpdateLogisticPipeAppearance(EntityUid targetPipe, LogisticPipeComponent component)
     {
+        if ((component.nodeFlags & (LogisticNodeType.Storage | LogisticNodeType.Requester)) != 0)
+            return;
         var connectionCount = 0;
         var connectedDirs = DirectionFlag.None;
         foreach(var dir in connectionDirs)

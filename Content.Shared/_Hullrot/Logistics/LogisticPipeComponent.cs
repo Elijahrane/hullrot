@@ -21,6 +21,9 @@ public sealed partial class LogisticPipeComponent : Component
     public LogisticNodeType nodeFlags = LogisticNodeType.Transporter;
 
     [DataField, ViewVariables]
+    public LogisticNetwork? network;
+
+    [DataField, ViewVariables]
     public int NetworkId = 0;
 }
 
@@ -115,21 +118,21 @@ public class LogisticNetwork : IDisposable
     }
 
     #endregion
-
+    [ViewVariables]
     public Stack<EntityRequest> logisticRequests = new();
-
+    [ViewVariables]
     public Dictionary<string, StorageRecordById> itemsById = new();
-
+    [ViewVariables]
     public List<EntityUid> ConnectedNodes = new();
-
+    [ViewVariables]
     public List<EntityUid> StorageNodes = new();
-
+    [ViewVariables]
     public List<EntityUid> RequesterNodes = new();
 
 
-
+    [ViewVariables]
     public int PipeCount = 0;
-
+    [ViewVariables]
     public int NetworkId = 0;
 
 }
