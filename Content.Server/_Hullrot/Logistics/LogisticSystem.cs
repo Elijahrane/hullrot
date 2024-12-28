@@ -153,12 +153,12 @@ public sealed class LogisticSystem : EntitySystem
         comp.network = network;
         network.ConnectedNodes.Add(pipe);
         network.PipeCount++;
-        if ((comp.nodeFlags & LogisticNodeType.Storage) != 0)
+        if (comp.IsStorage)
         {
             network.StorageNodes.Add(pipe);
             updateNetworkStorageData(network);
         }
-        if ((comp.nodeFlags & LogisticNodeType.Requester) != 0)
+        if (comp.IsRequster)
         {
             network.RequesterNodes.Add(pipe);
             updateNetworkRequestData(network);
@@ -296,9 +296,9 @@ public sealed class LogisticSystem : EntitySystem
         {
             if (!TryComp<LogisticPipeComponent>(node, out var comp))
                 continue;
-            if((comp.nodeFlags & LogisticNodeType.Requester) != 0)
+            if(comp.IsRequster)
                 network.RequesterNodes.Add(node);
-            if((comp.nodeFlags & LogisticNodeType.Storage) != 0)
+            if(comp.IsStorage)
                 network.StorageNodes.Add(node);
         }
 
@@ -420,7 +420,7 @@ public sealed class LogisticSystem : EntitySystem
 
     private void UpdateLogisticPipeAppearance(EntityUid targetPipe, LogisticPipeComponent component)
     {
-        if ((component.nodeFlags & (LogisticNodeType.Storage | LogisticNodeType.Requester)) != 0)
+        if (component.IsStorage | component.IsRequster)
             return;
         var connectionCount = 0;
         var connectedDirs = DirectionFlag.None;

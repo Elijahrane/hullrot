@@ -16,9 +16,10 @@ public sealed partial class LogisticPipeComponent : Component
 
     [DataField, ViewVariables]
     public Dictionary<DirectionFlag, EntityUid?> Connected = new();
-
     [DataField, ViewVariables]
-    public LogisticNodeType nodeFlags = LogisticNodeType.Transporter;
+    public bool IsStorage = false;
+    [DataField, ViewVariables]
+    public bool IsRequster = false;
 
     [DataField, ViewVariables]
     public LogisticNetwork? network;
@@ -37,7 +38,7 @@ public enum LogisticVisualLayout
     way3,
     way4
 }
-[Flags]
+[Flags, Serializable, NetSerializable]
 public enum LogisticNodeType
 {
     Transporter,

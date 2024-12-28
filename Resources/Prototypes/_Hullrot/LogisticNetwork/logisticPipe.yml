@@ -53,3 +53,13 @@
     bodyType: static
   - type: StaticPrice
     price: 30
+
+- type: entity
+  id: LogisticStorageContainer
+  parent: ClosetBombFilled
+  name: Logistic Closet1
+  components:
+  - type: LogisticPipe
+    IsStorage: true
+
+
