@@ -138,8 +138,6 @@ public sealed class LogisticSystem : EntitySystem
     {
         network.ConnectedNodes.Remove(pipe);
         network.PipeCount--;
-        if (TryComp<LogisticPipeComponent>(pipe, out var comp))
-            comp.network = network;
         if (network.PipeCount == 0)
             removeNetworkIdentifier(network.NetworkId);
             network.Dispose();
@@ -151,6 +149,8 @@ public sealed class LogisticSystem : EntitySystem
     {
         if (!TryComp<LogisticPipeComponent>(pipe, out var comp))
             return;
+        comp.NetworkId = network.NetworkId;
+        comp.network = network;
         network.ConnectedNodes.Add(pipe);
         network.PipeCount++;
         if ((comp.nodeFlags & LogisticNodeType.Storage) != 0)
@@ -202,11 +202,7 @@ public sealed class LogisticSystem : EntitySystem
         networks.Add(networkId, network);
         foreach (var uid in pipes)
         {
-            if (!TryComp<LogisticPipeComponent>(uid, out var comp))
-                continue;
-            network.ConnectedNodes.Add(uid);
-            network.PipeCount++;
-            comp.NetworkId = networkId;
+            AddPipeToNetwork(uid, network);
         }
 
         return networkId;
