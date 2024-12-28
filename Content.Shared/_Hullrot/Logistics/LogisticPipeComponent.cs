@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Robust.Shared.Serialization;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.Dictionary;
 
@@ -47,7 +48,7 @@ public class GetLogisticRequestsEvent : EntityEventArgs
     public List<LogisticNetwork.EntityRequest> Requests = new();
 }
 
-public class LogisticNetwork
+public class LogisticNetwork : IDisposable
 {
     #region InternalClasses
     public class EntityRequest
@@ -98,7 +99,22 @@ public class LogisticNetwork
             PrototypeId = id;
         }
     }
-#endregion
+    #endregion
+
+    #region DisposalImplementation
+
+    public void Dispose()
+    {
+        ConnectedNodes.Clear();
+        StorageNodes.Clear();
+        RequesterNodes.Clear();
+        foreach (var (key, data) in itemsById)
+        {
+            data.Providers.Clear();
+        }
+    }
+
+    #endregion
 
     public Stack<EntityRequest> logisticRequests = new();
 

@@ -76,6 +76,8 @@ public sealed class LogisticSystem : EntitySystem
 
             }
         }
+
+        RemovePipeFromNetwork(entity, networks[pipeComponent.NetworkId]);
         pipeComponent.NetworkId = 0;
     }
 
@@ -106,76 +108,15 @@ public sealed class LogisticSystem : EntitySystem
 
     public void MergeLogisticNetworks(LogisticNetwork into, LogisticNetwork target)
     {
-        var StorageRecordsByPrototypeID = new Dictionary<string, List<StorageRecordById>>();
-        var LogisticRequestsByRequester = new Dictionary<EntityUid, List<EntityRequest>>();
-        /// Its a union because we could have logistic bridges present
         var Nodes = into.ConnectedNodes.Union(target.ConnectedNodes).ToList();
         var PipeCount = Nodes.Count;
-        foreach (var (prototypeId, LogisticRecord) in into.itemsById)
-        {
-            if (StorageRecordsByPrototypeID.ContainsKey(prototypeId))
-                StorageRecordsByPrototypeID[prototypeId].Add(LogisticRecord);
-            else
-                StorageRecordsByPrototypeID.Add(prototypeId, new List<StorageRecordById>(1){LogisticRecord});
-        }
-        foreach (var (prototypeId, LogisticRecord) in target.itemsById)
-        {
-            if (StorageRecordsByPrototypeID.ContainsKey(prototypeId))
-                StorageRecordsByPrototypeID[prototypeId].Add(LogisticRecord);
-            else
-                StorageRecordsByPrototypeID.Add(prototypeId, new List<StorageRecordById>(1) { LogisticRecord });
-        }
-
-        foreach (var request in into.logisticRequests)
-        {
-            if(LogisticRequestsByRequester.ContainsKey(request.requester))
-                LogisticRequestsByRequester[request.requester].Add(request);
-            else
-            {
-                LogisticRequestsByRequester.Add(request.requester, new List<EntityRequest>(1){request});
-            }
-        }
-
-        foreach (var request in target.logisticRequests)
-        {
-            if (LogisticRequestsByRequester.ContainsKey(request.requester))
-                LogisticRequestsByRequester[request.requester].Add(request);
-            else
-            {
-                LogisticRequestsByRequester.Add(request.requester, new List<EntityRequest>(1) { request });
-            }
-        }
-
-        var replacementStorage = new Dictionary<string, StorageRecordById>();
-        foreach (var (prototype, list) in StorageRecordsByPrototypeID)
-        {
-            var unifiedRecords = new StorageRecordById(prototype);
-            foreach (var record in list)
-            {
-                foreach (var (storageEntity, amount) in record.Providers)
-                {
-                    if (unifiedRecords.Providers.ContainsKey(storageEntity))
-                        continue;
-                    unifiedRecords.Providers.Add(storageEntity, amount);
-                    unifiedRecords.TotalAmount += amount;
-                }
-            }
-            replacementStorage.Add(prototype, unifiedRecords);
-        }
-
-        var replacementRequestStack = new Stack<EntityRequest>();
-        foreach(var request in into.logisticRequests)
-            replacementRequestStack.Push(request);
-        foreach(var request in target.logisticRequests)
-            replacementRequestStack.Push(request);
         foreach(var pipe in Nodes)
         {
             if (!TryComp<LogisticPipeComponent>(pipe, out var pipeComp))
                 continue;
             pipeComp.NetworkId = into.NetworkId;
         }
-        into.logisticRequests = replacementRequestStack;
-        into.itemsById = replacementStorage;
+        rebuildNetworkData(into);
         into.ConnectedNodes = Nodes;
         into.PipeCount = PipeCount;
 
@@ -197,13 +138,28 @@ public sealed class LogisticSystem : EntitySystem
     {
         network.ConnectedNodes.Remove(pipe);
         network.PipeCount--;
+        if (network.PipeCount == 0)
+            removeNetworkIdentifier(network.NetworkId);
+            network.Dispose();
         _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} removed from {network.NetworkId} network", $"{pipe} removed from {network.NetworkId} network", pipe, false, false);
     }
 
     public void AddPipeToNetwork(EntityUid pipe, LogisticNetwork network)
     {
+        if (!TryComp<LogisticPipeComponent>(pipe, out var comp))
+            return;
         network.ConnectedNodes.Add(pipe);
         network.PipeCount++;
+        if ((comp.nodeFlags & LogisticNodeType.Storage) != 0)
+        {
+            network.StorageNodes.Add(pipe);
+            updateNetworkStorageData(network);
+        }
+        if ((comp.nodeFlags & LogisticNodeType.Requester) != 0)
+        {
+            network.RequesterNodes.Add(pipe);
+            updateNetworkRequestData(network);
+        }
         _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} added to {network.NetworkId} network", $"{pipe} added to {network.NetworkId} network", pipe, false, false);
     }
     public void OnPipeCreation(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
