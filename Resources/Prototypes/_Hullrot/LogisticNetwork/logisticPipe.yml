@@ -60,6 +60,6 @@
   name: Logistic Closet1
   components:
   - type: LogisticPipe
-    IsStorage: true
+    isStorage: true
 
 

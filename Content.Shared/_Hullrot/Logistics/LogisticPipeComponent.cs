@@ -17,9 +17,15 @@ public sealed partial class LogisticPipeComponent : Component
     [DataField, ViewVariables]
     public Dictionary<DirectionFlag, EntityUid?> Connected = new();
     [DataField, ViewVariables]
-    public bool IsStorage = false;
+    public bool isStorage = false;
     [DataField, ViewVariables]
-    public bool IsRequster = false;
+    public bool isRequester = false;
+    /// <summary>
+    /// necesarry becauase anchors are called before initialize startup and can't be checked for this in metadata SPCR 2024
+    /// </summary>
+    [DataField, ViewVariables]
+    public bool hasStarted = false;
+
 
     [DataField, ViewVariables]
     public LogisticNetwork? network;
@@ -90,12 +96,15 @@ public class LogisticNetwork : IDisposable
 
     public class StorageRecord
     {
+        [ViewVariables]
         public int TotalAmount = 0;
+        [ViewVariables]
         public Dictionary<EntityUid, int> Providers = new();
     }
 
     public class StorageRecordById : StorageRecord
     {
+        [ViewVariables]
         public string PrototypeId;
 
         public StorageRecordById(string id) : base()
@@ -116,6 +125,7 @@ public class LogisticNetwork : IDisposable
         {
             data.Providers.Clear();
         }
+
     }
 
     #endregion
