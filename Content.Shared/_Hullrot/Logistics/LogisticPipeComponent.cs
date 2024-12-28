@@ -58,6 +58,30 @@ public class GetLogisticRequestsEvent : EntityEventArgs
     public List<LogisticNetwork.EntityRequest> Requests = new();
 }
 
+public class GetLogisticStorageContents : EntityEventArgs
+{
+    public List<Tuple<string, int>> PrototypeAmountAvailable = new();
+}
+
+public class GetLogisticsStorageSpaceAvailable : EntityEventArgs
+{
+    public int space = 0;
+}
+
+public class GetLogisticsStorageSpaceTotal : EntityEventArgs
+{
+    public int space = 0;
+}
+
+public class LogisticsStorageContentsChange : EntityEventArgs
+{
+}
+
+public class LogisticsStorageRetrieveItem : EntityEventArgs
+{
+}
+
+        
 public class LogisticNetwork : IDisposable
 {
     #region InternalClasses
@@ -133,12 +157,16 @@ public class LogisticNetwork : IDisposable
     public Stack<EntityRequest> logisticRequests = new();
     [ViewVariables]
     public Dictionary<string, StorageRecordById> itemsById = new();
+
+    [ViewVariables]
+    public Dictionary<EntityUid, List<string>> RelevantStorageRecordsForStorer = new();
     [ViewVariables]
     public List<EntityUid> ConnectedNodes = new();
     [ViewVariables]
     public List<EntityUid> StorageNodes = new();
     [ViewVariables]
     public List<EntityUid> RequesterNodes = new();
+    
 
 
     [ViewVariables]
