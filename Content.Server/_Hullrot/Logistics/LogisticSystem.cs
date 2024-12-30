@@ -39,8 +39,7 @@ public sealed partial class LogisticSystem : EntitySystem
     /// <inheritdoc/>
     public override void Initialize()
     {
-        #region Storage Subscriptions
-        SubscribeLocalEvent
+        #region Storage Subscription
         #endregion
 
         #region Pipe Subscriptions
