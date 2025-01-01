@@ -40,6 +40,7 @@ public sealed partial class LogisticSystem : EntitySystem
     public override void Initialize()
     {
         #region Storage Subscription
+
         #endregion
 
         #region Pipe Subscriptions
