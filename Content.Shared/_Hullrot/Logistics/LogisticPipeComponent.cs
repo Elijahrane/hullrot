@@ -34,12 +34,6 @@ public sealed partial class LogisticPipeComponent : Component
     public int NetworkId = 0;
 }
 
-[RegisterComponent]
-public sealed partial class LogisticCargoDataComponent : Component
-{
-    [DataField, ViewVariables]
-    public Dictionary<string, List<EntityUid>> CargoEntries = new();    
-}
 [Serializable, NetSerializable]
 public enum LogisticVisualLayout
 {
@@ -153,17 +147,29 @@ public class LogisticNetwork : IDisposable
         {
             data.Providers.Clear();
         }
+        RelevantStorageRecordsForStorer.Clear();
 
     }
 
     #endregion
     [ViewVariables]
-    public Stack<EntityRequest> logisticRequests = new();
+    public Stack<EntityRequest> LogisticRequestsStack
+    {
+        get
+        {
+            return new Stack<EntityRequest>(LogisticRequests);
+        }
+    }
+
+    public List<EntityRequest> LogisticRequests = new();
     [ViewVariables]
     public Dictionary<string, StorageRecordById> itemsById = new();
 
     [ViewVariables]
+    // network state data for each storage node.
     public Dictionary<EntityUid, List<string>> RelevantStorageRecordsForStorer = new();
+
+    public Dictionary<EntityUid, List<EntityRequest>> RelevantRequestsForEntity = new();
     [ViewVariables]
     public List<EntityUid> ConnectedNodes = new();
     [ViewVariables]

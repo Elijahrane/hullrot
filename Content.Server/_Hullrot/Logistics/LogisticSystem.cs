@@ -14,6 +14,7 @@ using Robust.Server.GameObjects;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Random;
+using Robust.Shared.Utility;
 using static Content.Shared._Hullrot.Logistics.LogisticNetwork;
 
 namespace Content.Server._Hullrot.Logistics;
@@ -474,20 +475,26 @@ public sealed partial class LogisticSystem : EntitySystem
         if (comp.isRequester)
         {
             network.RequesterNodes.Add(pipe);
-            updateNetworkRequestData(network);
+            resetNetworkRequestData(network);
         }
         _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} added to {network.NetworkId} network", $"{pipe} added to {network.NetworkId} network", pipe, false, false);
     }
     public void RemovePipeFromNetwork(EntityUid pipe, LogisticNetwork network)
     {
-        updateNetworkStorageDataFor(pipe, new Dictionary<string, List<EntityUid>>(), network);
+        if (!TryComp<LogisticPipeComponent>(pipe, out var comp))
+            return;
         network.ConnectedNodes.Remove(pipe);
         network.PipeCount--;
         if (network.PipeCount == 0)
         {
             removeNetworkIdentifier(network.NetworkId);
             network.Dispose();
+            return;
         }
+        if (comp.isStorage)
+            updateNetworkStorageDataFor(pipe, new Dictionary<string, List<EntityUid>>(), network);
+        if (comp.isRequester)
+            resetNetworkRequestData(network);
 
         _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} removed from {network.NetworkId} network", $"{pipe} removed from {network.NetworkId} network", pipe, false, false);
     }
@@ -515,15 +522,19 @@ public sealed partial class LogisticSystem : EntitySystem
     #endregion
     #region Network Data Updates
 
-    public void updateNetworkStorageData(LogisticNetwork network)
+    public void resetNetworkStorageData(LogisticNetwork network)
     {
+        network.itemsById = new();
         foreach (var storage in network.StorageNodes)
         {
+            // wipe these so we get a clean network rebuild
+            if (TryComp<LogisticCargoDataComponent>(storage, out var comp))
+                comp.CargoEntries = new();
             updateNetworkStorageDataFor(storage, getStorageContentsData(storage), network);
         }
     }
 
-    public void updateNetworkRequestData(LogisticNetwork network)
+    public void resetNetworkRequestData(LogisticNetwork network)
     {
         network.logisticRequests = new Stack<EntityRequest>();
         foreach (var requester in network.RequesterNodes)
@@ -537,8 +548,8 @@ public sealed partial class LogisticSystem : EntitySystem
 
     public void rebuildNetworkData(LogisticNetwork network)
     {
-        updateNetworkStorageData(network);
-        updateNetworkRequestData(network);
+        resetNetworkStorageData(network);
+        resetNetworkRequestData(network);
     }
     #endregion
     #endregion
@@ -547,19 +558,21 @@ public sealed partial class LogisticSystem : EntitySystem
 
     public void updateNetworkStorageDataFor(EntityUid from, Dictionary<string, List<EntityUid>> entries, LogisticNetwork network)
     {
-        var dataComp = EnsureComp<LogisticCargoDataComponent>(from);
-        foreach (var (key,contentss) in dataComp.CargoEntries)
-        {
-            if (entries.ContainsKey(key))
-                continue;
-            var storageRecord = network.itemsById[key];
-            storageRecord.TotalAmount -= storageRecord.Providers[from];
-            storageRecord.Providers.Remove(from);
-            if (storageRecord.TotalAmount == 0)
-                network.itemsById.Remove(key);
-            else
-                network.itemsById[key] = storageRecord;
-        }
+        if (network.RelevantStorageRecordsForStorer.ContainsKey(from))
+            // wipes all entries which wont be updated in the new list
+            foreach (var key in network.RelevantStorageRecordsForStorer[from])
+            {
+                if (entries.ContainsKey(key))
+                    continue;
+                var storageRecord = network.itemsById[key];
+                storageRecord.TotalAmount -= storageRecord.Providers[from];
+                storageRecord.Providers.Remove(from);
+                if (storageRecord.TotalAmount == 0)
+                    network.itemsById.Remove(key);
+            }
+        else
+            network.RelevantStorageRecordsForStorer.Add(from, new List<string>());
+        var relevantEntries = network.RelevantStorageRecordsForStorer[from].Clear;
         foreach (var (key, items) in entries)
         {
             if (!network.itemsById.ContainsKey(key))
@@ -576,11 +589,9 @@ public sealed partial class LogisticSystem : EntitySystem
 
             storageRecord.TotalAmount += items.Count - storageRecord.Providers[from];
             storageRecord.Providers[from] = items.Count;
-            network.itemsById[key] = storageRecord;
+            relevantEntries.Add(key);
         }
-
-        dataComp.CargoEntries = entries;
-
+        
     }
 
     public Dictionary<string, List<EntityUid>> getStorageContentsData(EntityUid target)
@@ -601,14 +612,26 @@ public sealed partial class LogisticSystem : EntitySystem
         return localEntries;
     }
 
-    public void refreshNetworkStorageDataForTarget(EntityUid target)
-    {
-
-    }
-
     #endregion
 
     #region Requests
+
+    public List<EntityRequest> getRequestsForEntity(EntityUid from, LogisticNetwork network)
+    {
+        GetLogisticRequestsEvent data = new();
+        RaiseLocalEvent(from, data);
+        return data.Requests;
+    }
+
+    public void updateRequestsForEntity(EntityUid from, LogisticNetwork network)
+    {
+        if(network.RelevantRequestsForEntity.ContainsKey(from))
+        {
+           for (var request in network.RelevantRequestsForEntity[from]) { network.LogisticRequests.Remove(request)};
+        }
+        LogisticNetwork.Logisti
+
+    }
 
     #endregion
 }
