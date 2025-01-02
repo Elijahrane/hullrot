@@ -7,6 +7,7 @@ using Content.Shared.Atmos;
 using Content.Shared.Construction.Components;
 using Content.Shared.Construction.EntitySystems;
 using Content.Shared.Random;
+using Content.Shared.Storage.Components;
 using JetBrains.Annotations;
 using Robust.Server.Containers;
 using Robust.Server.GameObjects;
@@ -31,6 +32,7 @@ public sealed partial class LogisticSystem : EntitySystem
     [Dependency] private readonly IRobustRandom _random = default!;
     private Dictionary<int, LogisticNetwork> networks = new();
     private List<int> AlreadyGeneratedKeys = new();
+    public const string StorageContainerString = "entity_storage";
 
     private readonly List<DirectionFlag> connectionDirs = new (4){
         DirectionFlag.North, DirectionFlag.South, DirectionFlag.East, DirectionFlag.West};
@@ -40,7 +42,9 @@ public sealed partial class LogisticSystem : EntitySystem
     public override void Initialize()
     {
         #region Storage Subscription
-
+        SubscribeLocalEvent<LogisticCargoDataComponent, ComponentStartup>(OnCargoTrackerStartup);
+        SubscribeLocalEvent<LogisticCargoDataComponent, AnchorStateChangedEvent>(OnCargoTrackerAnchorChange);
+        SubscribeLocalEvent<LogisticCargoDataComponent, StorageAfterCloseEvent>();
         #endregion
 
         #region Pipe Subscriptions
@@ -501,34 +505,12 @@ public sealed partial class LogisticSystem : EntitySystem
 
     public void updateNetworkStorageData(LogisticNetwork network)
     {
-        network.itemsById = new Dictionary<string, StorageRecordById>();
         foreach (var storage in network.StorageNodes)
         {
-            if (!_containers.TryGetContainer(storage, "entity_storage", out var storageContainer))
-                continue;
-            foreach (var thing in storageContainer.ContainedEntities)
-            {
-                var key = MetaData(thing).EntityPrototype?.ID;
-                if (key is null)
-                    continue;
-                if (network.itemsById.ContainsKey(key))
-                {
-                    var data = network.itemsById[key];
-                    data.TotalAmount++;
-                    if (data.Providers.ContainsKey(thing))
-                        data.Providers[thing]++;
-                    else
-                        data.Providers.Add(thing, 1);
-                }
-                else
-                {
-                    StorageRecordById data = new(key);
-                    data.TotalAmount = 1;
-                    data.Providers.Add(thing, 1);
-                    network.itemsById.Add(key, data);
-                }
-
-            }
+            EnsureComp<LogisticCargoDataComponent>(storage, out var storageComp);
+            var localEntries = getStorageContentsData(storage);
+            storageComp.CargoEntries = localEntries;
+            setNetworkStorageData(storage, localEntries, network);
         }
     }
 
@@ -546,62 +528,75 @@ public sealed partial class LogisticSystem : EntitySystem
 
     public void rebuildNetworkData(LogisticNetwork network)
     {
-        network.logisticRequests = new Stack<EntityRequest>();
-        network.StorageNodes = new List<EntityUid>();
-        network.itemsById = new Dictionary<string, StorageRecordById>();
-        network.RequesterNodes = new List<EntityUid>();
-        foreach (var node in network.ConnectedNodes)
-        {
-            if (!TryComp<LogisticPipeComponent>(node, out var comp))
-                continue;
-            if (comp.isRequester)
-                network.RequesterNodes.Add(node);
-            if (comp.isStorage)
-                network.StorageNodes.Add(node);
-        }
-
-        foreach (var storage in network.StorageNodes)
-        {
-            if (!TryComp<EntityStorageComponent>(storage, out var comp))
-                continue;
-            foreach (var thing in comp.Contents.ContainedEntities)
-            {
-                var key = MetaData(thing).EntityPrototype?.ID;
-                if (key is null)
-                    continue;
-                if (network.itemsById.ContainsKey(key))
-                {
-                    var data = network.itemsById[key];
-                    data.TotalAmount++;
-                    if (data.Providers.ContainsKey(thing))
-                        data.Providers[thing]++;
-                    else
-                        data.Providers.Add(thing, 1);
-                }
-                else
-                {
-                    StorageRecordById data = new(key);
-                    data.TotalAmount = 1;
-                    data.Providers.Add(thing, 1);
-                    network.itemsById.Add(key, data);
-                }
-
-            }
-        }
-        foreach (var requester in network.RequesterNodes)
-        {
-            GetLogisticRequestsEvent data = new();
-            RaiseLocalEvent(requester, data);
-            foreach (var request in data.Requests)
-                network.logisticRequests.Push(request);
-        }
+        updateNetworkStorageData(network);
+        updateNetworkRequestData(network);
     }
     #endregion
     #endregion
 
     #region Storage
+
+    public void setNetworkStorageData(EntityUid from, Dictionary<string, List<EntityUid>> entries, LogisticNetwork network)
+    {
+        var dataComp = EnsureComp<LogisticCargoDataComponent>(from);
+        foreach (var (key,contentss) in dataComp.CargoEntries)
+        {
+            if (entries.ContainsKey(key))
+                continue;
+            var storageRecord = network.itemsById[key];
+            storageRecord.TotalAmount -= storageRecord.Providers[from];
+            storageRecord.Providers.Remove(from);
+            network.itemsById[key] = storageRecord;
+        }
+        foreach (var (key, items) in entries)
+        {
+            if (!network.itemsById.ContainsKey(key))
+            {
+                network.itemsById.Add(key, new StorageRecordById(key));
+            }
+
+            var storageRecord = network.itemsById[key];
+
+            if (!storageRecord.Providers.ContainsKey(from))
+            {
+                storageRecord.Providers.Add(from, 0);
+            }
+
+            storageRecord.TotalAmount += items.Count - storageRecord.Providers[from];
+            storageRecord.Providers[from] = items.Count;
+            network.itemsById[key] = storageRecord;
+        }
+
+        dataComp.CargoEntries = entries;
+
+    }
+
+    public Dictionary<string, List<EntityUid>> getStorageContentsData(EntityUid target)
+    {
+        var localEntries = new Dictionary<string, List<EntityUid>>();
+        if (!_containers.TryGetContainer(target, StorageContainerString, out var storageContainer))
+            return localEntries;
+        foreach (var thing in storageContainer.ContainedEntities)
+        {
+            var key = MetaData(thing).EntityPrototype?.ID;
+            if (key is null)
+                continue;
+            if (!localEntries.ContainsKey(key))
+                localEntries.Add(key, new List<EntityUid>());
+            localEntries[key].Add(thing);
+        }
+
+        return localEntries;
+    }
+
+    public void refreshNetworkStorageDataForTarget(EntityUid target)
+    {
+
+    }
+
     #endregion
 
     #region Requests
+
     #endregion
 }

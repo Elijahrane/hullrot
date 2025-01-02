@@ -7,7 +7,7 @@ namespace Content.Shared._Hullrot.Logistics;
 /// <summary>
 /// This is used for...
 /// </summary>
-[RegisterComponent]
+[RegisterComponent,Serializable, NetSerializable]
 public sealed partial class LogisticPipeComponent : Component
 {
     [DataField, ViewVariables]
@@ -34,6 +34,12 @@ public sealed partial class LogisticPipeComponent : Component
     public int NetworkId = 0;
 }
 
+[RegisterComponent]
+public sealed partial class LogisticCargoDataComponent : Component
+{
+    [DataField, ViewVariables]
+    public Dictionary<string, List<EntityUid>> CargoEntries = new();    
+}
 [Serializable, NetSerializable]
 public enum LogisticVisualLayout
 {
