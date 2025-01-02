@@ -53,9 +53,14 @@ public sealed partial class LogisticSystem : EntitySystem
         SubscribeLocalEvent<LogisticPipeComponent, ComponentRemove>(OnPipeRemove);
         #endregion 
     }
-    #region Pipes
-    #region Event Subscribers
-    public void OnPipeInit(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
+
+    public override void Update(float frameTime)
+    {
+        base.Update(frameTime);
+    }
+        #region Pipes
+        #region Event Subscribers
+        public void OnPipeInit(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
     {
         foreach (var connectionDir in connectionDirs)
         {
