@@ -524,25 +524,21 @@ public sealed partial class LogisticSystem : EntitySystem
 
     public void resetNetworkStorageData(LogisticNetwork network)
     {
-        network.itemsById = new();
+        network.itemsById.Clear();
+        network.RelevantStorageRecordsForStorer.Clear();
         foreach (var storage in network.StorageNodes)
         {
-            // wipe these so we get a clean network rebuild
-            if (TryComp<LogisticCargoDataComponent>(storage, out var comp))
-                comp.CargoEntries = new();
             updateNetworkStorageDataFor(storage, getStorageContentsData(storage), network);
         }
     }
 
     public void resetNetworkRequestData(LogisticNetwork network)
     {
-        network.logisticRequests = new Stack<EntityRequest>();
+        network.LogisticRequests.Clear();
+        network.RelevantRequestsForEntity.Clear();
         foreach (var requester in network.RequesterNodes)
         {
-            GetLogisticRequestsEvent data = new();
-            RaiseLocalEvent(requester, data);
-            foreach (var request in data.Requests)
-                network.logisticRequests.Push(request);
+            updateRequestsForEntity(requester, network);
         }
     }
 
@@ -572,7 +568,8 @@ public sealed partial class LogisticSystem : EntitySystem
             }
         else
             network.RelevantStorageRecordsForStorer.Add(from, new List<string>());
-        var relevantEntries = network.RelevantStorageRecordsForStorer[from].Clear;
+        var relevantEntries = network.RelevantStorageRecordsForStorer[from];
+        relevantEntries.Clear();
         foreach (var (key, items) in entries)
         {
             if (!network.itemsById.ContainsKey(key))
@@ -616,7 +613,7 @@ public sealed partial class LogisticSystem : EntitySystem
 
     #region Requests
 
-    public List<EntityRequest> getRequestsForEntity(EntityUid from, LogisticNetwork network)
+    public List<EntityRequest> getRequestsForEntity(EntityUid from)
     {
         GetLogisticRequestsEvent data = new();
         RaiseLocalEvent(from, data);
@@ -625,13 +622,24 @@ public sealed partial class LogisticSystem : EntitySystem
 
     public void updateRequestsForEntity(EntityUid from, LogisticNetwork network)
     {
+        // remove old entries
         if(network.RelevantRequestsForEntity.ContainsKey(from))
         {
-           for (var request in network.RelevantRequestsForEntity[from]) { network.LogisticRequests.Remove(request)};
+           foreach (var request in network.RelevantRequestsForEntity[from]) { network.LogisticRequests.Remove(request); };
         }
-        LogisticNetwork.Logisti
+        var newRequests = getRequestsForEntity(from);
+        if (newRequests.Count == 0)
+            return;
+        if (!network.RelevantRequestsForEntity.ContainsKey(from))
+            network.RelevantRequestsForEntity.Add(from, newRequests);
+        else
+            network.RelevantRequestsForEntity[from] = newRequests;
+        
+        network.LogisticRequests.AddRange(newRequests);
 
     }
+
+ 
 
     #endregion
 }
