@@ -50,12 +50,10 @@ public enum LogisticVisualLayout
     way3,
     way4
 }
-[Flags, Serializable, NetSerializable]
-public enum LogisticNodeType
+
+public class TryInsertIntoLogisticStorageEvent : EntityEventArgs
 {
-    Transporter,
-    Storage,
-    Requester
+    public EntityUid target;
 }
 
 

@@ -42,15 +42,14 @@ public sealed partial class LogisticSystem : EntitySystem
     public override void Initialize()
     {
         #region Storage Subscription
-        SubscribeLocalEvent<LogisticCargoDataComponent, ComponentStartup>(OnCargoTrackerStartup);
-        SubscribeLocalEvent<LogisticCargoDataComponent, AnchorStateChangedEvent>(OnCargoTrackerAnchorChange);
-        SubscribeLocalEvent<LogisticCargoDataComponent, StorageAfterCloseEvent>();
+
         #endregion
 
         #region Pipe Subscriptions
         SubscribeLocalEvent<LogisticPipeComponent, ComponentInit>(OnPipeInit);
         SubscribeLocalEvent<LogisticPipeComponent, ComponentStartup>(OnPipeStartup);
         SubscribeLocalEvent<LogisticPipeComponent, AnchorStateChangedEvent>(OnAnchorChange);
+        SubscribeLocalEvent<LogisticPipeComponent, ComponentRemove>(OnPipeRemove);
         #endregion 
     }
     #region Pipes
@@ -85,6 +84,16 @@ public sealed partial class LogisticSystem : EntitySystem
             DisconnectFromAllPipes(entity, pipeComponent);
         else
             ConnectNearby(entity, pipeComponent);
+    }
+
+    public void OnPipeRemove(EntityUid pipe, LogisticPipeComponent pipeComponent, ComponentRemove args)
+    {
+        DisconnectFromAllPipes(pipe, pipeComponent);
+        if (pipeComponent.NetworkId != 0)
+        {
+            var network = networks[pipeComponent.NetworkId];
+            RemovePipeFromNetwork(pipe , network);
+        }
     }
     #endregion
     #region Helpers
@@ -358,9 +367,9 @@ public sealed partial class LogisticSystem : EntitySystem
                 RemovePipeFromNetwork(firstPipe, network);
                 createNetwork(firstPipeCount);
             }
+            rebuildNetworkData(networks[firstComponent.NetworkId]);
+            rebuildNetworkData(networks[secondComponent.NetworkId]);
         }
-        rebuildNetworkData(networks[firstComponent.NetworkId]);
-        rebuildNetworkData(networks[secondComponent.NetworkId]);
         UpdateLogisticPipeAppearance(firstPipe, firstComponent);
         UpdateLogisticPipeAppearance(secondPipe, secondComponent);
     }
@@ -460,7 +469,7 @@ public sealed partial class LogisticSystem : EntitySystem
         if (comp.isStorage)
         {
             network.StorageNodes.Add(pipe);
-            updateNetworkStorageData(network);
+            updateNetworkStorageDataFor(pipe, getStorageContentsData(pipe), network);
         }
         if (comp.isRequester)
         {
@@ -471,11 +480,14 @@ public sealed partial class LogisticSystem : EntitySystem
     }
     public void RemovePipeFromNetwork(EntityUid pipe, LogisticNetwork network)
     {
+        updateNetworkStorageDataFor(pipe, new Dictionary<string, List<EntityUid>>(), network);
         network.ConnectedNodes.Remove(pipe);
         network.PipeCount--;
         if (network.PipeCount == 0)
+        {
             removeNetworkIdentifier(network.NetworkId);
-        network.Dispose();
+            network.Dispose();
+        }
 
         _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} removed from {network.NetworkId} network", $"{pipe} removed from {network.NetworkId} network", pipe, false, false);
     }
@@ -507,10 +519,7 @@ public sealed partial class LogisticSystem : EntitySystem
     {
         foreach (var storage in network.StorageNodes)
         {
-            EnsureComp<LogisticCargoDataComponent>(storage, out var storageComp);
-            var localEntries = getStorageContentsData(storage);
-            storageComp.CargoEntries = localEntries;
-            setNetworkStorageData(storage, localEntries, network);
+            updateNetworkStorageDataFor(storage, getStorageContentsData(storage), network);
         }
     }
 
@@ -536,7 +545,7 @@ public sealed partial class LogisticSystem : EntitySystem
 
     #region Storage
 
-    public void setNetworkStorageData(EntityUid from, Dictionary<string, List<EntityUid>> entries, LogisticNetwork network)
+    public void updateNetworkStorageDataFor(EntityUid from, Dictionary<string, List<EntityUid>> entries, LogisticNetwork network)
     {
         var dataComp = EnsureComp<LogisticCargoDataComponent>(from);
         foreach (var (key,contentss) in dataComp.CargoEntries)
@@ -546,7 +555,10 @@ public sealed partial class LogisticSystem : EntitySystem
             var storageRecord = network.itemsById[key];
             storageRecord.TotalAmount -= storageRecord.Providers[from];
             storageRecord.Providers.Remove(from);
-            network.itemsById[key] = storageRecord;
+            if (storageRecord.TotalAmount == 0)
+                network.itemsById.Remove(key);
+            else
+                network.itemsById[key] = storageRecord;
         }
         foreach (var (key, items) in entries)
         {
