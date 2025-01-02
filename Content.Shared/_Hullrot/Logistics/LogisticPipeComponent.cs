@@ -53,7 +53,7 @@ public class TryInsertIntoLogisticStorageEvent : EntityEventArgs
 
 public class GetLogisticRequestsEvent : EntityEventArgs
 {
-    public List<LogisticNetwork.EntityRequest> Requests = new();
+    public List<LogisticNetwork.LogisticCommand> Requests = new();
 }
 
 public class GetLogisticStorageContents : EntityEventArgs
@@ -83,37 +83,38 @@ public class LogisticsStorageRetrieveItem : EntityEventArgs
 public class LogisticNetwork : IDisposable
 {
     #region InternalClasses
-    public class EntityRequest
+    public abstract class LogisticCommand
     {
-        public readonly EntityUid requester;
-        public int Count;
+        public readonly EntityUid from;
+        public readonly List<EntityUid>? targets;
 
-        public EntityRequest(EntityUid requester, int amount)
+        public LogisticCommand(EntityUid from, List<EntityUid>? targets)
         {
-            this.requester = requester;
-            this.Count = amount;
+            this.from = from;
+            this.targets = targets;
         }
-
     }
 
-    public class EntityRequestById : EntityRequest
+    public sealed class LogisticEntityRequest : LogisticCommand
     {
         public readonly string prototypeId;
+        public int amount;
 
-        public EntityRequestById(EntityUid requester, int amount, string prototypeId) : base(requester, amount)
+        public LogisticEntityRequest(EntityUid from, int amount, string prototypeId, List<EntityUid>? targets) : base(from, targets)
         {
             this.prototypeId = prototypeId;
+            this.amount = amount;
         }
     }
-
-    public class EntityRequestByName : EntityRequest
+    public sealed class LogisticEntityStore : LogisticCommand
     {
-        public readonly string name;
+        public readonly List<EntityUid> toStore;
 
-        public EntityRequestByName(EntityUid requester, int amount, string name) : base(requester, amount)
+        public LogisticEntityStore(EntityUid from, List<EntityUid> toStore, List<EntityUid>? targets) : base(from, targets)
         {
-            this.name = name;
+            this.toStore = toStore;
         }
+
     }
 
     public class StorageRecord
@@ -153,23 +154,23 @@ public class LogisticNetwork : IDisposable
 
     #endregion
     [ViewVariables]
-    public Stack<EntityRequest> LogisticRequestsStack
+    public Stack<LogisticCommand> LogisticCommandStack
     {
         get
         {
-            return new Stack<EntityRequest>(LogisticRequests);
+            return new Stack<LogisticCommand>(LogisticCommandQueue);
         }
     }
 
-    public List<EntityRequest> LogisticRequests = new();
+    public List<LogisticCommand> LogisticCommandQueue = new();
     [ViewVariables]
     public Dictionary<string, StorageRecordById> itemsById = new();
 
     [ViewVariables]
     // network state data for each storage node.
     public Dictionary<EntityUid, List<string>> RelevantStorageRecordsForStorer = new();
-
-    public Dictionary<EntityUid, List<EntityRequest>> RelevantRequestsForEntity = new();
+    // network state data
+    public Dictionary<EntityUid, List<LogisticCommand>> RelevantRequestsForEntity = new();
     [ViewVariables]
     public List<EntityUid> ConnectedNodes = new();
     [ViewVariables]

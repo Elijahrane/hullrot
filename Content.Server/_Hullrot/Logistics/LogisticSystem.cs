@@ -58,8 +58,8 @@ public sealed partial class LogisticSystem : EntitySystem
     {
         base.Update(frameTime);
     }
-        #region Pipes
-        #region Event Subscribers
+    #region Pipes
+    #region Event Subscribers
         public void OnPipeInit(EntityUid pipe, LogisticPipeComponent component, ComponentInit args)
     {
         foreach (var connectionDir in connectionDirs)
@@ -539,7 +539,7 @@ public sealed partial class LogisticSystem : EntitySystem
 
     public void resetNetworkRequestData(LogisticNetwork network)
     {
-        network.LogisticRequests.Clear();
+        network.LogisticCommandQueue.Clear();
         network.RelevantRequestsForEntity.Clear();
         foreach (var requester in network.RequesterNodes)
         {
@@ -618,7 +618,7 @@ public sealed partial class LogisticSystem : EntitySystem
 
     #region Requests
 
-    public List<EntityRequest> getRequestsForEntity(EntityUid from)
+    public List<LogisticCommand> getRequestsForEntity(EntityUid from)
     {
         GetLogisticRequestsEvent data = new();
         RaiseLocalEvent(from, data);
@@ -630,7 +630,7 @@ public sealed partial class LogisticSystem : EntitySystem
         // remove old entries
         if(network.RelevantRequestsForEntity.ContainsKey(from))
         {
-           foreach (var request in network.RelevantRequestsForEntity[from]) { network.LogisticRequests.Remove(request); };
+           foreach (var request in network.RelevantRequestsForEntity[from]) { network.LogisticCommandQueue.Remove(request); };
         }
         var newRequests = getRequestsForEntity(from);
         if (newRequests.Count == 0)
@@ -640,7 +640,7 @@ public sealed partial class LogisticSystem : EntitySystem
         else
             network.RelevantRequestsForEntity[from] = newRequests;
         
-        network.LogisticRequests.AddRange(newRequests);
+        network.LogisticCommandQueue.AddRange(newRequests);
 
     }
 
