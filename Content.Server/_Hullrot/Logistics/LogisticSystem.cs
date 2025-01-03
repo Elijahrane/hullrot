@@ -34,6 +34,7 @@ public sealed partial class LogisticSystem : EntitySystem
     private Dictionary<int, LogisticNetwork> networks = new();
     private List<int> AlreadyGeneratedKeys = new();
     public const string StorageContainerString = "entity_storage";
+    public const int MaximumCommandsPerUpdate = 10;
 
     private readonly List<DirectionFlag> connectionDirs = new (4){
         DirectionFlag.North, DirectionFlag.South, DirectionFlag.East, DirectionFlag.West};
@@ -57,6 +58,12 @@ public sealed partial class LogisticSystem : EntitySystem
     public override void Update(float frameTime)
     {
         base.Update(frameTime);
+
+        foreach(var (key, network) in networks)
+        {
+
+        }
+
     }
     #region Pipes
     #region Event Subscribers
