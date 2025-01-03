@@ -45,9 +45,15 @@ public enum LogisticVisualLayout
     way4
 }
 
-public class TryInsertIntoLogisticStorageEvent : EntityEventArgs
+public class LogisticsSupplyItemsEvent : EntityEventArgs
 {
-    public EntityUid target;
+    public List<EntityUid> items;
+    public int amountTaken;
+
+    public LogisticsSupplyItemsEvent(List<EntityUid> items)
+    {
+        this.items = items;
+    }
 }
 
 
@@ -61,9 +67,20 @@ public class GetLogisticStorageContents : EntityEventArgs
     public List<Tuple<string, int>> PrototypeAmountAvailable = new();
 }
 
-public class GetLogisticsStorageSpaceAvailable : EntityEventArgs
+public class GetLogisticsStorageSpaceAvailableEvent : EntityEventArgs
 {
     public int space = 0;
+    public string? prototypeId;
+
+    public GetLogisticsStorageSpaceAvailableEvent()
+    {
+    }
+    public GetLogisticsStorageSpaceAvailableEvent(string prototype)
+    {
+        this.prototypeId = prototype;
+    }
+
+
 }
 
 public class GetLogisticsStorageSpaceTotal : EntityEventArgs
@@ -122,7 +139,7 @@ public class LogisticNetwork : IDisposable
         [ViewVariables]
         public int TotalAmount = 0;
         [ViewVariables]
-        public Dictionary<EntityUid, int> Providers = new();
+        public Dictionary<EntityUid, List<EntityUid>> Providers = new();
     }
 
     public class StorageRecordById : StorageRecord

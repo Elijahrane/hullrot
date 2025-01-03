@@ -98,8 +98,7 @@ namespace Content.Shared.Stacks
 
             _storage.PlayPickupAnimation(args.Used, popupPos, userCoords, localRotation, args.User);
         }
-
-        private bool TryMergeStacks(
+        public bool TryMergeStacks( // HULLROT PATCHED - SPCR
             EntityUid donor,
             EntityUid recipient,
             out int transferred,

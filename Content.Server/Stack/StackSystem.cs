@@ -12,7 +12,7 @@ namespace Content.Server.Stack
     ///     This is a good example for learning how to code in an ECS manner.
     /// </summary>
     [UsedImplicitly]
-    public sealed class StackSystem : SharedStackSystem
+    public sealed partial class StackSystem : SharedStackSystem // HULLROT PATCHED - SPCR
     {
         [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
 
@@ -21,7 +21,7 @@ namespace Content.Server.Stack
         public override void Initialize()
         {
             base.Initialize();
-
+            HullrotInitialize(); // HULLROT PATCHED - SPCR
             SubscribeLocalEvent<StackComponent, GetVerbsEvent<AlternativeVerb>>(OnStackAlternativeInteract);
         }
 
