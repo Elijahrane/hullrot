@@ -1,0 +1,7 @@
+- type: lobbyBackground
+  id: Gazer
+  background: /Textures/_Hullrot/LobbyScreens/gazer.png
+
+- type: lobbyBackground
+  id: And_Now
+  background: /Textures/_Hullrot/LobbyScreens/and_now.png
