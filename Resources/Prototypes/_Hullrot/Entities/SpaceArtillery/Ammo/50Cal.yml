@@ -1,0 +1,251 @@
+#.50 call Base bullet for machine gun
+
+- type: entity
+  id: 50BulletBase
+  parent: BaseBulletTrigger
+  abstract: true
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Projectile
+    ignoreWeaponGrid: true
+  - type: ShipWeaponProjectile
+  - type: TimedDespawn
+    lifetime: 10
+  - type: PointLight
+    radius: 3.5
+    energy: 0.5
+
+#.50 call EMP for machine gun
+- type: entity
+  id: 50BulletEMP
+  name: .50 EMP-tip slugthrower pellet
+  parent: 50BulletBase
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Projectile
+    damage:
+      types:
+        Structural: 35
+        Blunt: 10
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/50_emp_machinegun_casing.rsi
+    layers:
+    - state: base-projectile
+  - type: EmpOnTrigger
+    range: 3
+    energyConsumption: 250
+    disableDuration: 1
+  - type: PointLight
+    color: orange
+
+#.50 call AP for machine gun
+- type: entity
+  id: 50BulletArmorPiercing
+  name: .50 AP slugthrower bullet
+  parent: 50BulletBase
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Projectile
+    damage:
+      types:
+        Structural: 95
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/50_armorpiercing_machinegun_casing.rsi
+    layers:
+    - state: base-projectile
+  - type: ExplodeOnTrigger
+  - type: Explosive
+    explosionType: Default
+    maxIntensity: 9
+    intensitySlope: 7
+    totalIntensity: 7
+    maxTileBreak: 1
+  - type: PointLight
+    color: orange
+
+#.50 call HE for machine gun
+- type: entity
+  id: 50BulletHighExplosive
+  name: .50 low-yield explosive slugthrower bullet
+  parent: 50BulletBase
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Projectile
+    damage:
+      types:
+        Structural: 55
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/50_highexplosive_machinegun_casing.rsi
+    layers:
+    - state: base-projectile
+  - type: ExplodeOnTrigger
+  - type: Explosive
+    explosionType: Default
+    maxIntensity: 12
+    intensitySlope: 15
+    totalIntensity: 13
+    maxTileBreak: 2
+  - type: PointLight
+    radius: 5
+    color: orange
+    energy: 0.8
+
+#.50 call Practice for machine gun
+- type: entity
+  id: 50BulletPractice
+  name: .50 inert slughthrower bullet
+  parent: 50BulletBase
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Projectile
+    damage:
+      types:
+        Structural: 5
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/50_practice_machinegun_casing.rsi
+    layers:
+    - state: base-projectile
+  - type: ExplodeOnTrigger
+  - type: Explosive
+    explosionType: Default
+    maxIntensity: 0.1
+    intensitySlope: 1
+    totalIntensity: 0.5
+    maxTileBreak: 0
+  - type: PointLight
+    color: orange
+
+
+- type: entity
+  id: 50CartridgeBase
+  parent: BaseItem
+  abstract: true
+  components:
+  - type: Tag
+    tags:
+    - CartridgeMachineGun
+    - Cartridge
+  - type: Item
+    size: Tiny
+  - type: CartridgeAmmo
+    deleteOnSpawn: true
+  - type: Appearance
+  - type: SpentAmmoVisuals
+  - type: SpaceGarbage
+
+
+- type: entity
+  id: 50CartridgeEMP
+  name: .50 polymer-tip slugthrower cartridge
+  parent: 50CartridgeBase
+  description: A .50 slugthrower cartridge, tipped with polymer-encased bluespace crystal fragments, emitting an electromagnetic pulse upon landing.
+  components:
+  - type: CartridgeAmmo
+    proto: 50BulletEMP
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/50_emp_machinegun_casing.rsi
+    layers:
+    - state: base
+      map: ["enum.AmmoVisualLayers.Base"]
+
+- type: entity
+  id: 50CartridgeArmorPiercing
+  name: .50 depleted uranium slugthrower cartridge
+  parent: 50CartridgeBase
+  description: An armor-piercing .50 slugthrower cartridge, tipped with depleted uranium.
+  components:
+  - type: CartridgeAmmo
+    proto: 50BulletArmorPiercing
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/50_armorpiercing_machinegun_casing.rsi
+    layers:
+    - state: base
+      map: ["enum.AmmoVisualLayers.Base"]
+
+- type: entity
+  id: 50CartridgeHighExplosive
+  name: .50 low-yield explosive slugthrower cartridge
+  parent: 50CartridgeBase
+  description: An explosive-tipped slugthrower cartridge.
+  components:
+  - type: CartridgeAmmo
+    proto: 50BulletHighExplosive
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/50_highexplosive_machinegun_casing.rsi
+    layers:
+    - state: base
+      map: ["enum.AmmoVisualLayers.Base"]
+
+- type: entity
+  id: 50CartridgePractice
+  name: .50 inert slugthrower cartridge
+  parent: 50CartridgeBase
+  description: An inert slugthrower cartridge with a lower gunpowder yield.
+  components:
+  - type: CartridgeAmmo
+    proto: 50BulletPractice
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/50_practice_machinegun_casing.rsi
+    layers:
+    - state: base
+      map: ["enum.AmmoVisualLayers.Base"]
+
+- type: entity
+  id: 50MagazineBox
+  parent: BaseMagazineLightRifle
+  abstract: true
+  components:
+  - type: Tag
+    tags:
+    - SlugthrowerCartridgeBox
+  - type: BallisticAmmoProvider
+    mayTransfer: true
+    whitelist:
+      tags:
+      - CartridgeMachineGun
+    capacity: 200
+  - type: Item
+
+- type: entity
+  id: 50MagazineBoxArmorPiercing
+  name: ".50 cal uranium-tip slugthrower box"
+  parent: [50MagazineBox, BaseMagazineLightRifle]
+  components:
+  - type: BallisticAmmoProvider
+    proto: 50CartridgeArmorPiercing
+  - type: Sprite
+    sprite: _Hullrot/Ammunition/conscript_ammo_box.rsi
+    state: base
+
+- type: entity
+  id: 50MagazineBoxHE
+  name: ".50 cal low-yield explosive slugthrower box"
+  parent: 50MagazineBox
+  components:
+  - type: BallisticAmmoProvider
+    proto: 50CartridgeHighExplosive
+  - type: Sprite
+    sprite: _Hullrot/Ammunition/conscript_ammo_box.rsi
+    state: base
+
+- type: entity
+  id: 50MagazineBoxEMP
+  name: ".50 cal EMP slugthrower box"
+  parent: 50MagazineBox
+  components:
+  - type: BallisticAmmoProvider
+    proto: 50CartridgeEMP
+  - type: Sprite
+    sprite: _Hullrot/Ammunition/conscript_ammo_box.rsi
+    state: base
+
+- type: entity
+  id: 50MagazineBoxInert
+  name: ".50 cal inert slugthrower box"
+  parent: 50MagazineBox
+  components:
+  - type: BallisticAmmoProvider
+    proto: 50CartridgePractice
+  - type: Sprite
+    sprite: _Hullrot/Ammunition/conscript_ammo_box.rsi
+    state: base

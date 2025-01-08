@@ -1,0 +1,182 @@
+
+
+#50 cal
+
+- type: entity
+  id: SHISlugthrowerTurret
+  name: SHI 50c ballistic slugthrower
+  parent: BallisticArtillery
+  description: An outdated, gas-operated slugthrower. Usually found mounted on outdated civilian models. Ballistic-fed.
+  components:
+  - type: StaticPrice
+    price: 2500
+  - type: Sprite
+    sprite: _Hullrot/Objects/ShuttleWeapons/50cal.rsi
+    layers:
+    - state: space_artillery
+  - type: Battery
+    maxCharge: 200000
+    startingCharge: 200000
+  - type: ExaminableBattery
+  - type: Appearance
+  - type: AutoShootGun
+  - type: GunSignalControl
+  - type: WirelessNetworkConnection
+    range: 700
+  - type: DeviceLinkSink
+    ports:
+    - Toggle
+  - type: ChamberMagazineAmmoProvider
+  - type: ItemSlots
+    slots:
+      gun_magazine:
+        name: Magazine
+        startingItem: 50MagazineBoxArmorPiercing
+        insertSound: /Audio/Weapons/Guns/MagIn/ltrifle_magin.ogg
+        ejectSound: /Audio/Weapons/Guns/MagOut/ltrifle_magout.ogg
+        priority: 2
+        whitelist:
+          tags:
+          - SlugthrowerCartridgeBox
+      gun_chamber:
+        name: Chamber
+        startingItem: 50CartridgeArmorPiercing
+        priority: 1
+        whitelist:
+          tags:
+          - CartridgeMachineGun
+  - type: Gun
+    fireRate: 3
+    projectileSpeed: 95
+    soundGunshot:
+      path: /Audio/_Hullrot/Weapons/Guns/Gunshots/50cal.ogg
+    soundEmpty:
+      path: /Audio/Weapons/Guns/Empty/lmg_empty.ogg
+  - type: SpaceArtillery
+    powerChargeRate: 1500
+    powerUsePassive: 500
+  - type: BatterySelfRecharger
+  - type: Actions
+  - type: CombatMode
+    isInCombatMode: true
+  - type: Airtight
+  - type: RadiationBlocker
+    resistance: 8
+  - type: ContainerContainer
+    containers:
+      gun_chamber: !type:ContainerSlot
+      gun_magazine: !type:ContainerSlot
+#120mm
+
+- type: entity
+  id: Type99Artillery
+  name: SHI Type 99 120mm artillery
+  parent: BallisticArtillery
+  description: A heavier, bulkier version of the slugthrower. An antiquated SHI design. Requires manual reloading after expending magazine.
+  components:
+  - type: Sprite
+    sprite: _Hullrot/Objects/ShuttleWeapons/artillery.rsi
+    layers:
+    - state: artillery
+  - type: Appearance
+  - type: AmmoCounter
+  - type: Battery
+    maxCharge: 1000000
+    startingCharge: 1000000
+  - type: ExaminableBattery
+  - type: BallisticAmmoProvider
+    cycleable: false
+    capacity: 2
+    proto: 120mmShellArmorPiercing
+    whitelist:
+      tags:
+      - CartridgeShell
+  - type: WirelessNetworkConnection
+    range: 500
+  - type: Gun
+    fireRate: 3
+    projectileSpeed: 95
+    soundGunshot:
+      path: /Audio/Weapons/Guns/Gunshots/ship_duster.ogg
+    soundEmpty:
+      path: /Audio/Weapons/Guns/Empty/lmg_empty.ogg
+  - type: SpaceArtillery
+    powerChargeRate: 2000
+    powerUsePassive: 3000
+  - type: Actions
+  - type: ApcPowerReceiver
+    powerLoad: 3000
+  - type: ExtensionCableReceiver
+
+
+# base
+- type: entity
+  id: BallisticArtillery
+  abstract: true
+  placement:
+    mode: SnapgridCenter
+  components:
+  - type: Damageable
+    damageContainer: StructuralInorganic
+    damageModifierSet: StructuralMetallic
+  - type: Destructible
+    thresholds:
+    - trigger:
+        !type:DamageTrigger
+        damage: 200
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+    - trigger:
+        !type:DamageTrigger
+        damage: 100
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+      - !type:PlaySoundBehavior
+        sound:
+          collection: MetalBreak
+  - type: Clickable
+  - type: InteractionOutline
+  - type: Physics
+    bodyType: Static
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.25,-0.25,0.25,0.25"
+        density: 600
+        mask:
+        - MachineMask
+        layer:
+        - MachineLayer
+  - type: Transform
+    anchored: true
+  - type: Anchorable
+  - type: Pullable
+  - type: Rotatable
+    rotateWhilePulling: false
+    rotateWhileAnchored: true
+    increment: 45
+  - type: DeviceLinkSink
+    ports:
+    - SpaceArtilleryFire
+  - type: DeviceLinkSource
+    ports:
+    - SpaceArtilleryDetectedFiring
+    - SpaceArtilleryDetectedMalfunction
+  - type: SpaceArtillery
+  - type: DeviceNetwork
+    deviceNetId: Wireless
+    receiveFrequencyId: BasicDevice
+  - type: ApcPowerReceiver
+  - type: ExtensionCableReceiver
+  - type: BatterySelfRecharger
+  - type: ContainerContainer
+    containers:
+      ballistic-ammo: !type:Container
+      machine_board: !type:Container
+      machine_parts: !type:Container
+
+

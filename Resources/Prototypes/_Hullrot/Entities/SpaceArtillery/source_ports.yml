@@ -1,0 +1,9 @@
+- type: sourcePort
+  id: SpaceArtilleryDetectedFiring
+  name: "Firing detected"
+  description: "Sends signal when it detects Space Artillery successfully firing a shot."
+
+- type: sourcePort
+  id: SpaceArtilleryDetectedMalfunction
+  name: "Malfunction detected"
+  description: "Sends signal when it detects Space Artillery failing to fire or detecting an issue."

@@ -62,7 +62,7 @@ namespace Content.IntegrationTests.Tests
             "Train",
             "Oasis",
             "Cog",
-
+            "Amber",
             // Hullrot
             "Taypan",
         };
