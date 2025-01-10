@@ -1,11 +1,11 @@
 {
-  "version": 1,
-  "license": "CC-BY-SA-3.0",
-  "copyright": "Taken from TGMC 13.",
-  "size": {
-    "x": 32,
-    "y": 32
-  },
+    "version": 1,
+    "license": "CC-BY-SA-3.0",
+    "copyright": "Taken from Goonstation. https://github.com/goonstation/goonstation",
+    "size": {
+        "x": 32,
+        "y": 32
+    },
     "states": [
         {
             "name": "medipen-inhand-left"
