@@ -1,26 +1,23 @@
 {
-  "version": 1,
-  "license": "CC-BY-SA-3.0",
-  "copyright": "Sprited by the Sector Crescent team.",
-  "size": {
-    "x": 32,
-    "y": 32
-  },
-  "states": [
-    {
-      "name": "syndie_off",
-      "directions": 8
+    "version": 1,
+    "size": {
+        "x": 32,
+        "y": 32
     },
-    {
-      "name": "syndie_lethal",
-      "directions": 8
-    },
-    {
-      "name": "syndie_broken"
-    },
-    {
-      "name": "syndie_stun",
-      "directions": 8
-    }
-  ]
+    "license": "CC-BY-SA-3.0",
+    "copyright": "Taken from the Shiptest repo and modified: https://github.com/shiptest-ss13/Shiptest",
+    "states": [
+        {
+            "name": "base"
+        },
+        {
+            "name": "mag-1"
+        },
+        {
+            "name": "mag-2"
+        },
+        {
+            "name": "mag-3"
+        }
+    ]
 }
