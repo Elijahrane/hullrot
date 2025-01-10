@@ -1,23 +1,23 @@
 {
-  "version": 1,
-  "license": "CC-BY-SA-3.0",
-  "copyright": "Taken from TGMC.",
-  "size": {
-    "x": 32,
-    "y": 32
-  },
-  "states": [
-    {
-      "name": "syndie_off"
+    "version": 1,
+    "license": "CC-BY-SA-3.0",
+    "copyright": "Taken from TGMC. https://github.com/tgstation/TerraGov-Marine-Corps",
+    "size": {
+        "x": 32,
+        "y": 32
     },
-    {
-      "name": "syndie_lethal"
-    },
-    {
-      "name": "syndie_broken"
-    },
-    {
-      "name": "syndie_stun"
-    }
-  ]
+    "states": [
+        {
+            "name": "syndie_off"
+        },
+        {
+            "name": "syndie_lethal"
+        },
+        {
+            "name": "syndie_broken"
+        },
+        {
+            "name": "syndie_stun"
+        }
+    ]
 }
