@@ -5,7 +5,7 @@
         "y": 32
     },
     "license": "CC-BY-SA-3.0",
-    "copyright": "Taken from TG and modified for use in Sector Crescent.",
+    "copyright": "Taken from TG and modified for use in Sector Crescent. https://github.com/tgstation/tgstation",
     "states": [
         {
             "name": "base"

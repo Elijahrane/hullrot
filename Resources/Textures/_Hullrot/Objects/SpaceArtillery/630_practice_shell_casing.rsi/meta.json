@@ -5,7 +5,7 @@
         "y": 32
     },
     "license": "CC-BY-SA-3.0",
-    "copyright": "https://github.com/discordia-space/CEV-Eris/raw/8a848cde3e8610455f77704e861e5a06315a3b0e/icons/obj/ammo.dmi",
+    "copyright": "Taken from the NSV13 repo and modified. https://github.com/BeeStation/NSV13",
     "states": [
         {
             "name": "base"
@@ -13,8 +13,8 @@
         {
             "name": "base-spent"
         },
-		{
-			"name": "base-projectile"
-		}
+        {
+            "name": "base-projectile"
+        }
     ]
 }
