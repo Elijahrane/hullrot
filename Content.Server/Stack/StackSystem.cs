@@ -21,7 +21,6 @@ namespace Content.Server.Stack
         public override void Initialize()
         {
             base.Initialize();
-            HullrotInitialize(); // HULLROT PATCHED - SPCR
             SubscribeLocalEvent<StackComponent, GetVerbsEvent<AlternativeVerb>>(OnStackAlternativeInteract);
         }
 

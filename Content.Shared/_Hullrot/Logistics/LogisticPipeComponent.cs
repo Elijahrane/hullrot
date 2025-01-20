@@ -48,11 +48,13 @@ public enum LogisticVisualLayout
 public class LogisticsSupplyItemsEvent : EntityEventArgs
 {
     public List<EntityUid> items;
+    public List<EntityUid> taken;
     public int amountTaken;
 
     public LogisticsSupplyItemsEvent(List<EntityUid> items)
     {
         this.items = items;
+        taken = new List<EntityUid>();
     }
 }
 

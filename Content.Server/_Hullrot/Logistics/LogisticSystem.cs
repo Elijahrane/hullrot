@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Robust.Server.Containers;
 using Robust.Server.GameObjects;
 using Robust.Shared.GameObjects;
+using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
@@ -47,11 +48,6 @@ public sealed partial class LogisticSystem : EntitySystem
     private readonly List<DirectionFlag> connectionDirs = new (4){
         DirectionFlag.North, DirectionFlag.South, DirectionFlag.East, DirectionFlag.West};
 
-
-    private bool checkStackable(string prototypeId)
-    {
-
-    }
     /// <inheritdoc/>
     public override void Initialize()
     {
@@ -97,25 +93,15 @@ public sealed partial class LogisticSystem : EntitySystem
                         /// STORED so we can update their contents later
                         var affectedStorages = new List<EntityUid>();
                         var storageRecord = network.itemsById[request.prototypeId];
-                        if (!isStackablePrototype.ContainsKey(request.prototypeId))
-                        {
-                            var tempEntity = EntityManager.CreateEntityUninitialized(request.prototypeId));
-                            if (!TryComp<StackComponent>(request.prototypeId, out var stackComponent))
-                                isStackablePrototype.Add(request.prototypeId, false);
-                            else
-                            {
-                                isStackablePrototype.Add(request.prototypeId, true);
-                                StackMaxAmount.Add(request.prototypeId, _stacks.GetMaxCount(request.prototypeId));
-                            }
-                        }
-                        var isStackable = isStackablePrototype[request.prototypeId];
+                        var isStackable = _stacks.isStackable(request.prototypeId);
                         int requestAmountLeft;
                         if (isStackable)
                         {
-                            requestAmountLeft = Math.Min(request.amount, checkEvent.space * StackMaxAmount[request.prototypeId]);
+                            requestAmountLeft = Math.Min(request.amount,
+                                checkEvent.space * StackMaxAmount[request.prototypeId]);
                             foreach (var target in lookingIn)
                             {
-                                if (!storageRecord.Providers.Contains(target))
+                                if (!storageRecord.Providers.ContainsKey(target))
                                     continue;
                                 var itemsListCopy = new List<EntityUid>(storageRecord.Providers[target]);
                                 affectedStorages.Add(target);
@@ -125,39 +111,42 @@ public sealed partial class LogisticSystem : EntitySystem
                                     sending.Add(item);
                                     requestAmountLeft -= _stacks.GetCount(item);
                                 }
+
                                 if (requestAmountLeft <= 0)
                                     break;
                             }
-                            // try merge stacks first
-                            var nonFullStacks = new List<EntityUid>();
-                            foreach (var stack in sending)
-                            {
-                                var comp = Comp<StackComponent>(stack);
-                                if (_stacks.GetAvailableSpace(comp) == 0)
-                                    continue;
-                                if (nonFullStacks.Count == 0)
-                                {
-                                    nonFullStacks.Add(stack);
-                                    continue;
-                                }
-                                // this can only fail if the first stack is full in our context
-                                if(!_stacks.TryMergeStacks(stack, nonFullStacks[0], out var moved))
-                                {
-                                    nonFullStacks.RemoveAt(0);
-                                }
-                                if(comp.Count == 0)
-                                {
-                                    sending.Remove(stack);
-                                    continue;
-                                }
-                                nonFullStacks.Add(stack);
-                            }
-                            if(request.amount < 0)
-                            {
 
+                            // try merge stacks first
+                            sending = _stacks.mergeStackEntities(sending);
+
+                            if (request.amount < 0)
+                            {
+                                var Compensator = _stacks.Split(sending[0],
+                                    Math.Abs(request.amount),
+                                    new EntityCoordinates(sending[0], 0, 0));
+                                if (Compensator is not null)
+                                {
+                                    var supplyList = new List<EntityUid>();
+                                    supplyList.Add(Compensator.Value);
+                                    foreach (var storage in affectedStorages)
+                                    {
+                                        var storageEvent = new LogisticsSupplyItemsEvent(supplyList);
+                                        RaiseLocalEvent(storage, storageEvent);
+                                        if (storageEvent.items.Count == 0)
+                                            break;
+                                    }
+                                }
                             }
+
+                            var targetEvent = new LogisticsSupplyItemsEvent(sending);
+                            RaiseLocalEvent(request.from, targetEvent);
+
                         }
                         else
+                        {
+
+                        }
+                        break;
 
 
 
