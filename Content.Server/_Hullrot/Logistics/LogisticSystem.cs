@@ -199,17 +199,27 @@ public sealed partial class LogisticSystem : EntitySystem
                             RaiseLocalEvent(target, checkEvent);
                             if (checkEvent.space == 0)
                                 continue;
-                            foreach (var thing in store.toStore)
+                            affectedStorages.Add(target);
+                            foreach (var thing in store.toStore.ShallowClone())
                             {
-                                _containers.Insert(thing, target);
+                                _containers.Insert(thing, _containers.GetContainer(target, StorageContainerString));
+                                if (Transform(thing).ParentUid != target)
+                                    break;
+                                store.toStore.Remove(thing);
+                            }
+
+                            if (store.toStore.Count == 0)
+                            {
+                                completed.Add(command);
+                                break;
                             }
 
                         }
 
-
-
-
-
+                        foreach (var storage in affectedStorages)
+                        {
+                            updateNetworkStorageDataFor(storage, getStorageContentsData(storage), network);
+                        }
                         break;
                     }
                     default:
