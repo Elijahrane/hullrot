@@ -60,7 +60,7 @@ public sealed partial class LogisticSystem : EntitySystem
         SubscribeLocalEvent<LogisticPipeComponent, ComponentStartup>(OnPipeStartup);
         SubscribeLocalEvent<LogisticPipeComponent, AnchorStateChangedEvent>(OnAnchorChange);
         SubscribeLocalEvent<LogisticPipeComponent, ComponentRemove>(OnPipeRemove);
-        #endregion 
+        #endregion
     }
 
     public override void Update(float frameTime)
@@ -70,13 +70,15 @@ public sealed partial class LogisticSystem : EntitySystem
         foreach(var (key, network) in networks)
         {
             var commandCount = 0;
+            var completed = new List<LogisticCommand>();
             foreach(var command in network.LogisticCommandQueue)
             {
                 if (commandCount > MaximumCommandsPerUpdate)
                     break;
-                switch(command)
+                switch (command)
                 {
                     case LogisticEntityRequest request:
+                    {
                         List<EntityUid> lookingIn;
                         /// check if there is space first
                         GetLogisticsStorageSpaceAvailableEvent checkEvent = new(request.prototypeId);
@@ -84,9 +86,26 @@ public sealed partial class LogisticSystem : EntitySystem
                         if (checkEvent.space == 0)
                             break;
                         if (request.targets is not null)
+                        {
                             lookingIn = request.targets;
+                            foreach (var target in lookingIn.ShallowClone())
+                            {
+                                if (network.StorageNodes.Contains(target))
+                                    continue;
+                                lookingIn.Remove(target);
+                            }
+
+                            if (lookingIn.Count == 0)
+                            {
+                                completed.Add(command);
+                                break;
+                            }
+
+                        }
+
                         else
                             lookingIn = network.StorageNodes;
+
                         if (lookingIn.Count == 0)
                             break;
                         var sending = new List<EntityUid>();
@@ -94,28 +113,27 @@ public sealed partial class LogisticSystem : EntitySystem
                         var affectedStorages = new List<EntityUid>();
                         var storageRecord = network.itemsById[request.prototypeId];
                         var isStackable = _stacks.isStackable(request.prototypeId);
-                        int requestAmountLeft;
-                        if (isStackable)
+                        int requestAmountLeft = Math.Min(request.amount,
+                            checkEvent.space * StackMaxAmount[request.prototypeId]);
+                        foreach (var target in lookingIn)
                         {
-                            requestAmountLeft = Math.Min(request.amount,
-                                checkEvent.space * StackMaxAmount[request.prototypeId]);
-                            foreach (var target in lookingIn)
+                            if (!storageRecord.Providers.ContainsKey(target))
+                                continue;
+                            var itemsListCopy = new List<EntityUid>(storageRecord.Providers[target]);
+                            affectedStorages.Add(target);
+                            while (requestAmountLeft > 0 && itemsListCopy.Count > 0)
                             {
-                                if (!storageRecord.Providers.ContainsKey(target))
-                                    continue;
-                                var itemsListCopy = new List<EntityUid>(storageRecord.Providers[target]);
-                                affectedStorages.Add(target);
-                                while (requestAmountLeft > 0 && itemsListCopy.Count > 0)
-                                {
-                                    var item = itemsListCopy.Pop();
-                                    sending.Add(item);
-                                    requestAmountLeft -= _stacks.GetCount(item);
-                                }
-
-                                if (requestAmountLeft <= 0)
-                                    break;
+                                var item = itemsListCopy.Pop();
+                                sending.Add(item);
+                                requestAmountLeft -= _stacks.GetCount(item);
                             }
 
+                            if (requestAmountLeft <= 0)
+                                break;
+                        }
+
+                        if (isStackable)
+                        {
                             // try merge stacks first
                             sending = _stacks.mergeStackEntities(sending);
 
@@ -137,25 +155,66 @@ public sealed partial class LogisticSystem : EntitySystem
                                     }
                                 }
                             }
+                        }
 
-                            var targetEvent = new LogisticsSupplyItemsEvent(sending);
-                            RaiseLocalEvent(request.from, targetEvent);
+                        var targetEvent = new LogisticsSupplyItemsEvent(sending);
+                        RaiseLocalEvent(request.from, targetEvent);
 
+
+                        foreach (var storage in affectedStorages)
+                            updateNetworkStorageDataFor(storage, getStorageContentsData(storage), network);
+                        completed.Add(command);
+                        break;
+                    }
+
+                    case LogisticEntityStore store:
+                    {
+                        List<EntityUid> validStorage;
+                        if (store.targets is not null)
+                        {
+                            validStorage = store.targets;
+                            foreach (var target in store.targets)
+                            {
+                                if (network.StorageNodes.Contains(target))
+                                    continue;
+                                validStorage.Remove(target);
+                            }
+
+                            if (validStorage.Count == 0)
+                            {
+                                completed.Add(command);
+                                break;
+                            }
                         }
                         else
                         {
+                            validStorage = network.StorageNodes;
+                        }
+
+                        List<EntityUid> affectedStorages = new();
+
+                        foreach (var target in validStorage)
+                        {
+                            GetLogisticsStorageSpaceAvailableEvent checkEvent = new();
+                            RaiseLocalEvent(target, checkEvent);
+                            if (checkEvent.space == 0)
+                                continue;
+                            foreach (var thing in store.toStore)
+                            {
+                                _containers.Insert(thing, target);
+                            }
 
                         }
+
+
+
+
+
                         break;
-
-
-
-                            break;
-                    case LogisticEntityStore store:
-                        break;
+                    }
                     default:
                         break;
-                        
+
                 }
             }
         }
@@ -243,7 +302,7 @@ public sealed partial class LogisticSystem : EntitySystem
         return counter;
     }
 
-    
+
 
     public DirectionFlag getReverseDir(DirectionFlag dir)
     {
@@ -261,7 +320,7 @@ public sealed partial class LogisticSystem : EntitySystem
                 return DirectionFlag.None;
         }
     }
-    
+
 
     private IEnumerable<Tuple<EntityUid, LogisticPipeComponent>> LogisticPipesInDirection(Vector2i pos, DirectionFlag pipeDir, MapGridComponent grid, EntityUid mapUid)
     {
@@ -697,7 +756,7 @@ public sealed partial class LogisticSystem : EntitySystem
             storageRecord.TotalAmount += items.Count - storageRecord.Providers[from].Count;
             relevantEntries.Add(key);
         }
-        
+
     }
 
     public Dictionary<string, List<EntityUid>> getStorageContentsData(EntityUid target)
@@ -743,12 +802,12 @@ public sealed partial class LogisticSystem : EntitySystem
             network.RelevantRequestsForEntity.Add(from, newRequests);
         else
             network.RelevantRequestsForEntity[from] = newRequests;
-        
+
         network.LogisticCommandQueue.AddRange(newRequests);
 
     }
 
- 
+
 
     #endregion
 }

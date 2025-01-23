@@ -28,7 +28,11 @@ namespace Content.Server.Stack;
     {
         var tempEntity = EntityManager.CreateEntityUninitialized(prototypeId);
         if (!TryComp<StackComponent>(tempEntity, out var stackComponent))
+        {
             isStackablePrototype.Add(prototypeId, false);
+            StackMaxAmount.Add(prototypeId, 1);
+        }
+
         else
         {
             isStackablePrototype.Add(prototypeId, true);
@@ -43,13 +47,6 @@ namespace Content.Server.Stack;
         return isStackablePrototype[prototypeId];
     }
 
-    public IComparer<Tuple<EntityUid, StackComponent>> stackComparer
-    {
-        int Compare()
-        {
-            return 0;
-        }
-    
 
 
     public List<EntityUid> mergeStackEntities(List<EntityUid> targets)
