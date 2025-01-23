@@ -45,7 +45,7 @@ public enum LogisticVisualLayout
     way4
 }
 
-public class LogisticsSupplyItemsEvent : EntityEventArgs
+public sealed class LogisticsSupplyItemsEvent : EntityEventArgs
 {
     public List<EntityUid> items;
     public List<EntityUid> taken;
@@ -58,17 +58,16 @@ public class LogisticsSupplyItemsEvent : EntityEventArgs
     }
 }
 
-
-public class GetLogisticRequestsEvent : EntityEventArgs
+public sealed class GetLogisticRequestsEvent : EntityEventArgs
 {
     public List<LogisticNetwork.LogisticCommand> Requests = new();
 }
-
+[Serializable, NetSerializable]
 public class GetLogisticStorageContents : EntityEventArgs
 {
     public List<Tuple<string, int>> PrototypeAmountAvailable = new();
 }
-
+[Serializable, NetSerializable]
 public class GetLogisticsStorageSpaceAvailableEvent : EntityEventArgs
 {
     public int space = 0;
@@ -84,21 +83,20 @@ public class GetLogisticsStorageSpaceAvailableEvent : EntityEventArgs
 
 
 }
-
+[Serializable, NetSerializable]
 public class GetLogisticsStorageSpaceTotal : EntityEventArgs
 {
     public int space = 0;
 }
-
+[Serializable, NetSerializable]
 public class LogisticsStorageContentsChange : EntityEventArgs
 {
 }
-
+[Serializable, NetSerializable]
 public class LogisticsStorageRetrieveItem : EntityEventArgs
 {
 }
 
-        
 public class LogisticNetwork : IDisposable
 {
     #region InternalClasses
@@ -196,7 +194,7 @@ public class LogisticNetwork : IDisposable
     public List<EntityUid> StorageNodes = new();
     [ViewVariables]
     public List<EntityUid> RequesterNodes = new();
-    
+
 
 
     [ViewVariables]
