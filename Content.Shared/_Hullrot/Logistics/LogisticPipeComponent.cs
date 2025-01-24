@@ -7,7 +7,7 @@ namespace Content.Shared._Hullrot.Logistics;
 /// <summary>
 /// This is used for...
 /// </summary>
-[RegisterComponent,Serializable, NetSerializable]
+[RegisterComponent]
 public sealed partial class LogisticPipeComponent : Component
 {
     [DataField, ViewVariables]
@@ -45,59 +45,7 @@ public enum LogisticVisualLayout
     way4
 }
 
-public sealed class LogisticsSupplyItemsEvent : EntityEventArgs
-{
-    public List<EntityUid> items;
-    public List<EntityUid> taken;
-    public int amountTaken;
-
-    public LogisticsSupplyItemsEvent(List<EntityUid> items)
-    {
-        this.items = items;
-        taken = new List<EntityUid>();
-    }
-}
-
-public sealed class GetLogisticRequestsEvent : EntityEventArgs
-{
-    public List<LogisticNetwork.LogisticCommand> Requests = new();
-}
-[Serializable, NetSerializable]
-public class GetLogisticStorageContents : EntityEventArgs
-{
-    public List<Tuple<string, int>> PrototypeAmountAvailable = new();
-}
-[Serializable, NetSerializable]
-public class GetLogisticsStorageSpaceAvailableEvent : EntityEventArgs
-{
-    public int space = 0;
-    public string? prototypeId;
-
-    public GetLogisticsStorageSpaceAvailableEvent()
-    {
-    }
-    public GetLogisticsStorageSpaceAvailableEvent(string prototype)
-    {
-        this.prototypeId = prototype;
-    }
-
-
-}
-[Serializable, NetSerializable]
-public class GetLogisticsStorageSpaceTotal : EntityEventArgs
-{
-    public int space = 0;
-}
-[Serializable, NetSerializable]
-public class LogisticsStorageContentsChange : EntityEventArgs
-{
-}
-[Serializable, NetSerializable]
-public class LogisticsStorageRetrieveItem : EntityEventArgs
-{
-}
-
-public class LogisticNetwork : IDisposable
+public  class LogisticNetwork : IDisposable
 {
     #region InternalClasses
     public abstract class LogisticCommand
@@ -203,5 +151,3 @@ public class LogisticNetwork : IDisposable
     public int NetworkId = 0;
 
 }
-
-

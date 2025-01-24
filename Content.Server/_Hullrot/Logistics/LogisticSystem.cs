@@ -20,7 +20,6 @@ using Robust.Shared.Map.Components;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Robust.Shared.Utility;
-using static Content.Shared._Hullrot.Logistics.LogisticNetwork;
 
 namespace Content.Server._Hullrot.Logistics;
 
@@ -70,14 +69,14 @@ public sealed partial class LogisticSystem : EntitySystem
         foreach(var (key, network) in networks)
         {
             var commandCount = 0;
-            var completed = new List<LogisticCommand>();
+            var completed = new List<LogisticNetwork.LogisticCommand>();
             foreach(var command in network.LogisticCommandQueue)
             {
                 if (commandCount > MaximumCommandsPerUpdate)
                     break;
                 switch (command)
                 {
-                    case LogisticEntityRequest request:
+                    case LogisticNetwork.LogisticEntityRequest request:
                     {
                         List<EntityUid> lookingIn;
                         /// check if there is space first
@@ -167,7 +166,7 @@ public sealed partial class LogisticSystem : EntitySystem
                         break;
                     }
 
-                    case LogisticEntityStore store:
+                    case LogisticNetwork.LogisticEntityStore store:
                     {
                         List<EntityUid> validStorage;
                         if (store.targets is not null)
@@ -249,6 +248,10 @@ public sealed partial class LogisticSystem : EntitySystem
         component.hasStarted = true;
         if (Transform(pipe).Anchored)
             ConnectNearby(pipe, component);
+        else
+        {
+            return;
+        }
         if (component.NetworkId == 0)
         {
             createNetwork(pipe, component);
@@ -262,6 +265,10 @@ public sealed partial class LogisticSystem : EntitySystem
             DisconnectFromAllPipes(entity, pipeComponent);
         else
             ConnectNearby(entity, pipeComponent);
+        if (pipeComponent.NetworkId == 0)
+        {
+            createNetwork(entity, pipeComponent);
+        }
     }
 
     public void OnPipeRemove(EntityUid pipe, LogisticPipeComponent pipeComponent, ComponentRemove args)
@@ -339,7 +346,7 @@ public sealed partial class LogisticSystem : EntitySystem
         {
             if(!TryComp<LogisticPipeComponent>(entity, out var container))
                 continue;
-
+            _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"Found {MetaData(entity).EntityName}", $"Found {MetaData(entity).EntityName}", mapUid, false, false);
             yield return new (entity, container);
         }
     }
@@ -455,12 +462,10 @@ public sealed partial class LogisticSystem : EntitySystem
         secondComponent.Connected[getReverseDir(firstDir)] = firstPipe;
         if (firstComponent.NetworkId == 0)
         {
-            firstComponent.NetworkId = secondComponent.NetworkId;
             AddPipeToNetwork(firstPipe, networks[secondComponent.NetworkId]);
         }
         else if (secondComponent.NetworkId == 0)
         {
-            secondComponent.NetworkId = firstComponent.NetworkId;
             AddPipeToNetwork(secondPipe, networks[firstComponent.NetworkId]);
         }
 
@@ -613,11 +618,10 @@ public sealed partial class LogisticSystem : EntitySystem
     {
         var networkId = generateNetworkIdentifier();
         var network = new LogisticNetwork();
-        network.ConnectedNodes.Add(pipe);
-        network.PipeCount = 1;
         network.NetworkId = networkId;
         component.NetworkId = networkId;
         networks.Add(networkId, network);
+        AddPipeToNetwork(pipe, network);
         return networkId;
     }
 
@@ -672,6 +676,7 @@ public sealed partial class LogisticSystem : EntitySystem
             updateNetworkStorageDataFor(pipe, new Dictionary<string, List<EntityUid>>(), network);
         if (comp.isRequester)
             resetNetworkRequestData(network);
+        comp.network = null;
 
         _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} removed from {network.NetworkId} network", $"{pipe} removed from {network.NetworkId} network", pipe, false, false);
     }
@@ -751,7 +756,7 @@ public sealed partial class LogisticSystem : EntitySystem
         {
             if (!network.itemsById.ContainsKey(key))
             {
-                network.itemsById.Add(key, new StorageRecordById(key));
+                network.itemsById.Add(key, new LogisticNetwork.StorageRecordById(key));
             }
 
             var storageRecord = network.itemsById[key];
@@ -791,7 +796,7 @@ public sealed partial class LogisticSystem : EntitySystem
 
     #region Requests
 
-    public List<LogisticCommand> getRequestsForEntity(EntityUid from)
+    public List<LogisticNetwork.LogisticCommand> getRequestsForEntity(EntityUid from)
     {
         GetLogisticRequestsEvent data = new();
         RaiseLocalEvent(from, data);
