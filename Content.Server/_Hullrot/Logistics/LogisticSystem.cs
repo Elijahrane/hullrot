@@ -672,8 +672,13 @@ public sealed partial class LogisticSystem : EntitySystem
             network.Dispose();
             return;
         }
+
         if (comp.isStorage)
+        {
             updateNetworkStorageDataFor(pipe, new Dictionary<string, List<EntityUid>>(), network);
+            network.RelevantStorageRecordsForStorer.Remove(pipe);
+        }
+
         if (comp.isRequester)
             resetNetworkRequestData(network);
         comp.network = null;
@@ -760,15 +765,17 @@ public sealed partial class LogisticSystem : EntitySystem
             }
 
             var storageRecord = network.itemsById[key];
-
             if (!storageRecord.Providers.ContainsKey(from))
             {
                 storageRecord.Providers.Add(from, items);
+                storageRecord.TotalAmount += items.Count;
             }
             else
-                storageRecord.Providers[from] = items;
+            {
+                storageRecord.TotalAmount += items.Count - storageRecord.Providers[from].Count;
+                storageRecord.Providers[from].AddRange(items);
+            }
 
-            storageRecord.TotalAmount += items.Count - storageRecord.Providers[from].Count;
             relevantEntries.Add(key);
         }
 
