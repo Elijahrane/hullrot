@@ -3,6 +3,7 @@ using System.Linq;
 using Content.Server.Chat.Managers;
 using Content.Server.Stack;
 using Content.Server.Storage.Components;
+using Content.Server.Verbs;
 using Content.Shared._Hullrot.Logistics;
 using Content.Shared.Atmos;
 using Content.Shared.Construction.Components;
@@ -10,6 +11,7 @@ using Content.Shared.Construction.EntitySystems;
 using Content.Shared.Random;
 using Content.Shared.Stacks;
 using Content.Shared.Storage.Components;
+using Content.Shared.Verbs;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Robust.Server.Containers;
@@ -37,6 +39,7 @@ public sealed partial class LogisticSystem : EntitySystem
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly StackSystem _stacks = default!;
+    [Dependency] private readonly VerbSystem _verbs = default!;
     private Dictionary<int, LogisticNetwork> networks = new();
     private List<int> AlreadyGeneratedKeys = new();
     private Dictionary<string, bool> isStackablePrototype = new();
@@ -60,6 +63,14 @@ public sealed partial class LogisticSystem : EntitySystem
         SubscribeLocalEvent<LogisticPipeComponent, AnchorStateChangedEvent>(OnAnchorChange);
         SubscribeLocalEvent<LogisticPipeComponent, ComponentRemove>(OnPipeRemove);
         #endregion
+
+
+        SubscribeLocalEvent<LogisticAlwaysRequestComponent, GetVerbsEvent<UtilityVerb>>(OnRequester);
+    }
+
+    public void OnRequester(EntityUid uid, LogisticAlwaysRequestComponent comp, ref GetVerbsEvent<UtilityVerb> args)
+    {
+
     }
 
     public override void Update(float frameTime)

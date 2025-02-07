@@ -34,6 +34,12 @@ public sealed partial class LogisticPipeComponent : Component
     public int NetworkId = 0;
 }
 
+[RegisterComponent]
+public sealed class LogisticAlwaysRequestComponent : Component
+{
+
+}
+
 [Serializable, NetSerializable]
 public enum LogisticVisualLayout
 {
