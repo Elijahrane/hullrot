@@ -1,0 +1,186 @@
+# Bullets
+
+- type: entity
+  id: 120mmBulletBase
+  name: shell
+  parent: BaseBulletTrigger
+  abstract: true
+  categories: [ HideSpawnMenu ]
+  components:
+  #- type: Projectile
+    #ignoreWeaponGrid: true
+  - type: TimedDespawn
+    lifetime: 60
+  - type: PointLight
+    radius: 3.5
+    energy: 0.5
+  - type: ShipWeaponProjectile
+
+
+- type: entity
+  id: 120mmBulletExplosiveBase
+  parent: 120mmBulletBase
+  abstract: true
+  categories: [ HideSpawnMenu ]
+  components:
+    - type: ExplodeOnTrigger
+    - type: Explosive
+      explosionType: Default
+
+
+- type: entity
+  id: 120mmBulletArmorPiercing
+  parent: 120mmBulletExplosiveBase
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Projectile
+    damage:
+      types:
+        Structural: 1000
+        #currently explosion deals roughly 60 damage
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/630_armorpiercing_shell_casing.rsi
+    layers:
+    - state: base-projectile
+  - type: Explosive
+    maxIntensity: 60
+    intensitySlope: 50
+    totalIntensity: 60
+    maxTileBreak: 5
+  - type: PointLight
+    color: orange
+
+- type: entity
+  id: 120mmBulletHighExplosive
+  parent: 120mmBulletExplosiveBase
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Projectile
+    damage:
+      types:
+        Structural: 250
+        #currently explosion deals roughly 30 damage per tile in large AoE
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/630_highexplosive_shell_casing.rsi
+    layers:
+    - state: base-projectile
+  - type: Explosive
+    maxIntensity: 95
+    intensitySlope: 35
+    totalIntensity: 195
+    maxTileBreak: 6
+  - type: PointLight
+    color: red
+
+- type: entity
+  id: 120mmBulletPractice
+  parent: 120mmBulletExplosiveBase
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Projectile
+    damage:
+      types:
+        Structural: 1
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/630_practice_shell_casing.rsi
+    layers:
+    - state: base-projectile
+  - type: Explosive
+    maxIntensity: 0.1
+    intensitySlope: 1
+    totalIntensity: 2
+    maxTileBreak: 2
+  - type: PointLight
+    color: orange
+
+- type: entity
+  id: 120mmBulletEmp
+  name: shell
+  parent: 120mmBulletBase
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Projectile
+    damage:
+      types:
+        Structural: 100
+        Blunt: 20
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/630_emp_shell_casing.rsi
+    layers:
+    - state: base-projectile
+  - type: EmpOnTrigger
+    range: 8
+    energyConsumption: 10000
+    disableDuration: 10
+  - type: PointLight
+    color: blue
+
+# Shells
+
+- type: entity
+  id: 120mmShellBase
+  abstract: true
+  parent: BaseItem
+  components:
+  - type: Tag
+    tags:
+    - CartridgeShell
+    - Cartridge
+  - type: Item
+    size: Normal
+  - type: CartridgeAmmo
+    deleteOnSpawn: false
+  - type: Sprite
+    layers:
+    - state: base
+      map: [ "enum.AmmoVisualLayers.Base" ]
+  - type: Appearance
+  - type: SpentAmmoVisuals
+  - type: SpaceGarbage
+
+- type: entity
+  id: 120mmShellArmorPiercing
+  name: 120mm depleted uranium shell
+  parent: 120mmShellBase
+  description: A primitive artillery shell with a depleted uranium tip. Rends armor apart.
+  components:
+  - type: CartridgeAmmo
+    proto: 120mmBulletArmorPiercing
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/630_armorpiercing_shell_casing.rsi
+
+- type: entity
+  id: 120mmShellHighExplosive
+  name: 120mm high-yield explosive artillery shell
+  parent: 120mmShellBase
+  description: A primitive 120mm artillery shell with a volatile compound tip. Delivers devastating kinetic explosions against enemy hull.
+  components:
+  - type: CartridgeAmmo
+    proto: 120mmBulletHighExplosive
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/630_highexplosive_shell_casing.rsi
+
+- type: entity
+  id: 120mmShellPractice
+  name: 120mm practice artillery shell
+  parent: 120mmShellBase
+  description: A primitive artillery shell designed for naval training drills.
+  components:
+  - type: CartridgeAmmo
+    proto: 120mmBulletPractice
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/630_practice_shell_casing.rsi
+
+- type: entity
+  id: 120mmShellEmp
+  name: 120mm EMP artillery shell
+  parent: 120mmShellBase
+  description: A primitive artillery shell, lined with bluespace crystal fragments. Disrupts electronics.
+  components:
+  - type: CartridgeAmmo
+    proto: 120mmBulletEmp
+    deleteOnSpawn: false
+  - type: Sprite
+    sprite: _Hullrot/Objects/SpaceArtillery/630_emp_shell_casing.rsi
+
+
