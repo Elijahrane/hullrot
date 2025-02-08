@@ -24,6 +24,10 @@ using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Robust.Shared.Utility;
 
+/*
+ * Written by SPCR/MLGTASTICa for Hullrot. All rights & copyrights reserved. This code may not be used without explicit permission given through mail from
+ * ak9bc10d@yahoo.com or through messaging from https://github.com/MLGTASTICa
+ */
 namespace Content.Server._Hullrot.Logistics;
 
 /// <summary>

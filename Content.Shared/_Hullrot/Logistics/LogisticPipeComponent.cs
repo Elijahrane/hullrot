@@ -1,7 +1,10 @@
 using System.Threading.Tasks;
 using Robust.Shared.Serialization;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.Dictionary;
-
+/*
+ * Written by SPCR/MLGTASTICa for Hullrot. All rights & copyrights reserved. This code may not be used without explicit permission given through mail from
+ * ak9bc10d@yahoo.com or through messaging from https://github.com/MLGTASTICa
+ */
 namespace Content.Shared._Hullrot.Logistics;
 
 /// <summary>
