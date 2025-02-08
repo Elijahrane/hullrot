@@ -62,4 +62,11 @@
   - type: LogisticPipe
     isStorage: true
 
-
+- type: entity
+  id: LogisticRequestContainer
+  parent: ClosetBomb
+  name: Logistic Requester
+  components:
+  - type: LogisticPipe
+    isRequester: true
+  - type: LogisticAlwaysRequest

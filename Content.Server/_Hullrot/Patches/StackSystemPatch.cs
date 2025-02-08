@@ -32,7 +32,6 @@ namespace Content.Server.Stack;
             isStackablePrototype.Add(prototypeId, false);
             StackMaxAmount.Add(prototypeId, 1);
         }
-
         else
         {
             isStackablePrototype.Add(prototypeId, true);

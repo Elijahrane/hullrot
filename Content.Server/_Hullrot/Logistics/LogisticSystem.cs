@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Content.Server.Chat.Managers;
@@ -42,8 +43,6 @@ public sealed partial class LogisticSystem : EntitySystem
     [Dependency] private readonly VerbSystem _verbs = default!;
     private Dictionary<int, LogisticNetwork> networks = new();
     private List<int> AlreadyGeneratedKeys = new();
-    private Dictionary<string, bool> isStackablePrototype = new();
-    private Dictionary<string, int> StackMaxAmount = new();
     public const string StorageContainerString = "entity_storage";
     public const int MaximumCommandsPerUpdate = 10;
 
@@ -65,12 +64,44 @@ public sealed partial class LogisticSystem : EntitySystem
         #endregion
 
 
-        SubscribeLocalEvent<LogisticAlwaysRequestComponent, GetVerbsEvent<UtilityVerb>>(OnRequester);
+        SubscribeLocalEvent<LogisticAlwaysRequestComponent, GetVerbsEvent<ActivationVerb>>(OnRequester);
+        SubscribeLocalEvent<LogisticAlwaysRequestComponent, GetLogisticsStorageSpaceAvailableEvent>(OnSpace);
+        SubscribeLocalEvent<LogisticAlwaysRequestComponent, LogisticsSupplyItemsEvent>(OnSupply);
     }
 
-    public void OnRequester(EntityUid uid, LogisticAlwaysRequestComponent comp, ref GetVerbsEvent<UtilityVerb> args)
+    public void OnSpace(EntityUid uid,
+        LogisticAlwaysRequestComponent comp,
+        ref GetLogisticsStorageSpaceAvailableEvent args)
     {
+        args.space = 10;
+    }
 
+    public void OnSupply(EntityUid uid, LogisticAlwaysRequestComponent comp, ref LogisticsSupplyItemsEvent args)
+    {
+        foreach (var item in args.items)
+        {
+            var container = _containers.GetContainer(uid, StorageContainerString);
+            _containers.InsertOrDrop(item, container);
+            args.taken.Add(item);
+        }
+    }
+    public void OnRequester(EntityUid uid, LogisticAlwaysRequestComponent comp, ref GetVerbsEvent<ActivationVerb> args)
+    {
+        if (!TryComp<LogisticPipeComponent>(uid, out var netComp))
+            return;
+        if (netComp.NetworkId == 0)
+            return;
+        var network = networks[netComp.NetworkId];
+        ActivationVerb verb = new()
+        {
+            Text = $"requests",
+            Act = () =>
+            {
+                var req = new LogisticNetwork.LogisticEntityRequest(uid, 1, "ClothingOuterSuitBomb", null);
+                network.LogisticCommandQueue.Add(req);
+            }
+        };
+        args.Verbs.Add(verb);
     }
 
     public override void Update(float frameTime)
@@ -124,7 +155,7 @@ public sealed partial class LogisticSystem : EntitySystem
                         var storageRecord = network.itemsById[request.prototypeId];
                         var isStackable = _stacks.isStackable(request.prototypeId);
                         int requestAmountLeft = Math.Min(request.amount,
-                            checkEvent.space * StackMaxAmount[request.prototypeId]);
+                            checkEvent.space * _stacks.GetMaxCount(request.prototypeId));
                         foreach (var target in lookingIn)
                         {
                             if (!storageRecord.Providers.ContainsKey(target))
@@ -236,6 +267,15 @@ public sealed partial class LogisticSystem : EntitySystem
                         break;
 
                 }
+
+                foreach (var compl in completed)
+                {
+                    network.LogisticCommandQueue.Remove(compl);
+                }
+            }
+            foreach (var compl in completed)
+            {
+                network.LogisticCommandQueue.Remove(compl);
             }
         }
 
