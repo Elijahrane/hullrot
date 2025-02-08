@@ -1,8 +1,10 @@
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Content.Server.Chat.Managers;
 using Content.Server.Stack;
 using Content.Server.Storage.Components;
+using Content.Server.Verbs;
 using Content.Shared._Hullrot.Logistics;
 using Content.Shared.Atmos;
 using Content.Shared.Construction.Components;
@@ -10,16 +12,17 @@ using Content.Shared.Construction.EntitySystems;
 using Content.Shared.Random;
 using Content.Shared.Stacks;
 using Content.Shared.Storage.Components;
+using Content.Shared.Verbs;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Robust.Server.Containers;
 using Robust.Server.GameObjects;
 using Robust.Shared.GameObjects;
+using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Robust.Shared.Utility;
-using static Content.Shared._Hullrot.Logistics.LogisticNetwork;
 
 namespace Content.Server._Hullrot.Logistics;
 
@@ -37,21 +40,15 @@ public sealed partial class LogisticSystem : EntitySystem
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly StackSystem _stacks = default!;
+    [Dependency] private readonly VerbSystem _verbs = default!;
     private Dictionary<int, LogisticNetwork> networks = new();
     private List<int> AlreadyGeneratedKeys = new();
-    private Dictionary<string, bool> isStackablePrototype = new();
-    private Dictionary<string, int> StackMaxAmount = new();
     public const string StorageContainerString = "entity_storage";
     public const int MaximumCommandsPerUpdate = 10;
 
     private readonly List<DirectionFlag> connectionDirs = new (4){
         DirectionFlag.North, DirectionFlag.South, DirectionFlag.East, DirectionFlag.West};
 
-
-    private bool checkStackable(string prototypeId)
-    {
-
-    }
     /// <inheritdoc/>
     public override void Initialize()
     {
@@ -64,7 +61,47 @@ public sealed partial class LogisticSystem : EntitySystem
         SubscribeLocalEvent<LogisticPipeComponent, ComponentStartup>(OnPipeStartup);
         SubscribeLocalEvent<LogisticPipeComponent, AnchorStateChangedEvent>(OnAnchorChange);
         SubscribeLocalEvent<LogisticPipeComponent, ComponentRemove>(OnPipeRemove);
-        #endregion 
+        #endregion
+
+
+        SubscribeLocalEvent<LogisticAlwaysRequestComponent, GetVerbsEvent<ActivationVerb>>(OnRequester);
+        SubscribeLocalEvent<LogisticAlwaysRequestComponent, GetLogisticsStorageSpaceAvailableEvent>(OnSpace);
+        SubscribeLocalEvent<LogisticAlwaysRequestComponent, LogisticsSupplyItemsEvent>(OnSupply);
+    }
+
+    public void OnSpace(EntityUid uid,
+        LogisticAlwaysRequestComponent comp,
+        ref GetLogisticsStorageSpaceAvailableEvent args)
+    {
+        args.space = 10;
+    }
+
+    public void OnSupply(EntityUid uid, LogisticAlwaysRequestComponent comp, ref LogisticsSupplyItemsEvent args)
+    {
+        foreach (var item in args.items)
+        {
+            var container = _containers.GetContainer(uid, StorageContainerString);
+            _containers.InsertOrDrop(item, container);
+            args.taken.Add(item);
+        }
+    }
+    public void OnRequester(EntityUid uid, LogisticAlwaysRequestComponent comp, ref GetVerbsEvent<ActivationVerb> args)
+    {
+        if (!TryComp<LogisticPipeComponent>(uid, out var netComp))
+            return;
+        if (netComp.NetworkId == 0)
+            return;
+        var network = networks[netComp.NetworkId];
+        ActivationVerb verb = new()
+        {
+            Text = $"requests",
+            Act = () =>
+            {
+                var req = new LogisticNetwork.LogisticEntityRequest(uid, 1, "ClothingOuterSuitBomb", null);
+                network.LogisticCommandQueue.Add(req);
+            }
+        };
+        args.Verbs.Add(verb);
     }
 
     public override void Update(float frameTime)
@@ -74,13 +111,15 @@ public sealed partial class LogisticSystem : EntitySystem
         foreach(var (key, network) in networks)
         {
             var commandCount = 0;
+            var completed = new List<LogisticNetwork.LogisticCommand>();
             foreach(var command in network.LogisticCommandQueue)
             {
                 if (commandCount > MaximumCommandsPerUpdate)
                     break;
-                switch(command)
+                switch (command)
                 {
-                    case LogisticEntityRequest request:
+                    case LogisticNetwork.LogisticEntityRequest request:
+                    {
                         List<EntityUid> lookingIn;
                         /// check if there is space first
                         GetLogisticsStorageSpaceAvailableEvent checkEvent = new(request.prototypeId);
@@ -88,86 +127,155 @@ public sealed partial class LogisticSystem : EntitySystem
                         if (checkEvent.space == 0)
                             break;
                         if (request.targets is not null)
+                        {
                             lookingIn = request.targets;
+                            foreach (var target in lookingIn.ShallowClone())
+                            {
+                                if (network.StorageNodes.Contains(target))
+                                    continue;
+                                lookingIn.Remove(target);
+                            }
+
+                            if (lookingIn.Count == 0)
+                            {
+                                completed.Add(command);
+                                break;
+                            }
+
+                        }
+
                         else
                             lookingIn = network.StorageNodes;
+
                         if (lookingIn.Count == 0)
                             break;
                         var sending = new List<EntityUid>();
                         /// STORED so we can update their contents later
                         var affectedStorages = new List<EntityUid>();
                         var storageRecord = network.itemsById[request.prototypeId];
-                        if (!isStackablePrototype.ContainsKey(request.prototypeId))
+                        var isStackable = _stacks.isStackable(request.prototypeId);
+                        int requestAmountLeft = Math.Min(request.amount,
+                            checkEvent.space * _stacks.GetMaxCount(request.prototypeId));
+                        foreach (var target in lookingIn)
                         {
-                            var tempEntity = EntityManager.CreateEntityUninitialized(request.prototypeId));
-                            if (!TryComp<StackComponent>(request.prototypeId, out var stackComponent))
-                                isStackablePrototype.Add(request.prototypeId, false);
-                            else
+                            if (!storageRecord.Providers.ContainsKey(target))
+                                continue;
+                            var itemsListCopy = new List<EntityUid>(storageRecord.Providers[target]);
+                            affectedStorages.Add(target);
+                            while (requestAmountLeft > 0 && itemsListCopy.Count > 0)
                             {
-                                isStackablePrototype.Add(request.prototypeId, true);
-                                StackMaxAmount.Add(request.prototypeId, _stacks.GetMaxCount(request.prototypeId));
+                                var item = itemsListCopy.Pop();
+                                sending.Add(item);
+                                requestAmountLeft -= _stacks.GetCount(item);
                             }
+
+                            if (requestAmountLeft <= 0)
+                                break;
                         }
-                        var isStackable = isStackablePrototype[request.prototypeId];
-                        int requestAmountLeft;
+
                         if (isStackable)
                         {
-                            requestAmountLeft = Math.Min(request.amount, checkEvent.space * StackMaxAmount[request.prototypeId]);
-                            foreach (var target in lookingIn)
-                            {
-                                if (!storageRecord.Providers.Contains(target))
-                                    continue;
-                                var itemsListCopy = new List<EntityUid>(storageRecord.Providers[target]);
-                                affectedStorages.Add(target);
-                                while (requestAmountLeft > 0 && itemsListCopy.Count > 0)
-                                {
-                                    var item = itemsListCopy.Pop();
-                                    sending.Add(item);
-                                    requestAmountLeft -= _stacks.GetCount(item);
-                                }
-                                if (requestAmountLeft <= 0)
-                                    break;
-                            }
                             // try merge stacks first
-                            var nonFullStacks = new List<EntityUid>();
-                            foreach (var stack in sending)
-                            {
-                                var comp = Comp<StackComponent>(stack);
-                                if (_stacks.GetAvailableSpace(comp) == 0)
-                                    continue;
-                                if (nonFullStacks.Count == 0)
-                                {
-                                    nonFullStacks.Add(stack);
-                                    continue;
-                                }
-                                // this can only fail if the first stack is full in our context
-                                if(!_stacks.TryMergeStacks(stack, nonFullStacks[0], out var moved))
-                                {
-                                    nonFullStacks.RemoveAt(0);
-                                }
-                                if(comp.Count == 0)
-                                {
-                                    sending.Remove(stack);
-                                    continue;
-                                }
-                                nonFullStacks.Add(stack);
-                            }
-                            if(request.amount < 0)
-                            {
+                            sending = _stacks.mergeStackEntities(sending);
 
+                            if (request.amount < 0)
+                            {
+                                var Compensator = _stacks.Split(sending[0],
+                                    Math.Abs(request.amount),
+                                    new EntityCoordinates(sending[0], 0, 0));
+                                if (Compensator is not null)
+                                {
+                                    var supplyList = new List<EntityUid>();
+                                    supplyList.Add(Compensator.Value);
+                                    foreach (var storage in affectedStorages)
+                                    {
+                                        var storageEvent = new LogisticsSupplyItemsEvent(supplyList);
+                                        RaiseLocalEvent(storage, storageEvent);
+                                        if (storageEvent.items.Count == 0)
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+
+                        var targetEvent = new LogisticsSupplyItemsEvent(sending);
+                        RaiseLocalEvent(request.from, targetEvent);
+
+
+                        foreach (var storage in affectedStorages)
+                            updateNetworkStorageDataFor(storage, getStorageContentsData(storage), network);
+                        completed.Add(command);
+                        break;
+                    }
+
+                    case LogisticNetwork.LogisticEntityStore store:
+                    {
+                        List<EntityUid> validStorage;
+                        if (store.targets is not null)
+                        {
+                            validStorage = store.targets;
+                            foreach (var target in store.targets)
+                            {
+                                if (network.StorageNodes.Contains(target))
+                                    continue;
+                                validStorage.Remove(target);
+                            }
+
+                            if (validStorage.Count == 0)
+                            {
+                                completed.Add(command);
+                                break;
                             }
                         }
                         else
+                        {
+                            validStorage = network.StorageNodes;
+                        }
 
+                        List<EntityUid> affectedStorages = new();
 
+                        foreach (var target in validStorage)
+                        {
+                            GetLogisticsStorageSpaceAvailableEvent checkEvent = new();
+                            RaiseLocalEvent(target, checkEvent);
+                            if (checkEvent.space == 0)
+                                continue;
+                            affectedStorages.Add(target);
+                            foreach (var thing in store.toStore.ShallowClone())
+                            {
+                                _containers.Insert(thing, _containers.GetContainer(target, StorageContainerString));
+                                if (Transform(thing).ParentUid != target)
+                                    break;
+                                store.toStore.Remove(thing);
+                            }
 
-                            break;
-                    case LogisticEntityStore store:
+                            if (store.toStore.Count == 0)
+                            {
+                                completed.Add(command);
+                                break;
+                            }
+
+                        }
+
+                        foreach (var storage in affectedStorages)
+                        {
+                            updateNetworkStorageDataFor(storage, getStorageContentsData(storage), network);
+                        }
                         break;
+                    }
                     default:
                         break;
-                        
+
                 }
+
+                foreach (var compl in completed)
+                {
+                    network.LogisticCommandQueue.Remove(compl);
+                }
+            }
+            foreach (var compl in completed)
+            {
+                network.LogisticCommandQueue.Remove(compl);
             }
         }
 
@@ -191,6 +299,10 @@ public sealed partial class LogisticSystem : EntitySystem
         component.hasStarted = true;
         if (Transform(pipe).Anchored)
             ConnectNearby(pipe, component);
+        else
+        {
+            return;
+        }
         if (component.NetworkId == 0)
         {
             createNetwork(pipe, component);
@@ -204,6 +316,10 @@ public sealed partial class LogisticSystem : EntitySystem
             DisconnectFromAllPipes(entity, pipeComponent);
         else
             ConnectNearby(entity, pipeComponent);
+        if (pipeComponent.NetworkId == 0)
+        {
+            createNetwork(entity, pipeComponent);
+        }
     }
 
     public void OnPipeRemove(EntityUid pipe, LogisticPipeComponent pipeComponent, ComponentRemove args)
@@ -254,7 +370,7 @@ public sealed partial class LogisticSystem : EntitySystem
         return counter;
     }
 
-    
+
 
     public DirectionFlag getReverseDir(DirectionFlag dir)
     {
@@ -272,7 +388,7 @@ public sealed partial class LogisticSystem : EntitySystem
                 return DirectionFlag.None;
         }
     }
-    
+
 
     private IEnumerable<Tuple<EntityUid, LogisticPipeComponent>> LogisticPipesInDirection(Vector2i pos, DirectionFlag pipeDir, MapGridComponent grid, EntityUid mapUid)
     {
@@ -281,7 +397,7 @@ public sealed partial class LogisticSystem : EntitySystem
         {
             if(!TryComp<LogisticPipeComponent>(entity, out var container))
                 continue;
-
+            _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"Found {MetaData(entity).EntityName}", $"Found {MetaData(entity).EntityName}", mapUid, false, false);
             yield return new (entity, container);
         }
     }
@@ -397,12 +513,10 @@ public sealed partial class LogisticSystem : EntitySystem
         secondComponent.Connected[getReverseDir(firstDir)] = firstPipe;
         if (firstComponent.NetworkId == 0)
         {
-            firstComponent.NetworkId = secondComponent.NetworkId;
             AddPipeToNetwork(firstPipe, networks[secondComponent.NetworkId]);
         }
         else if (secondComponent.NetworkId == 0)
         {
-            secondComponent.NetworkId = firstComponent.NetworkId;
             AddPipeToNetwork(secondPipe, networks[firstComponent.NetworkId]);
         }
 
@@ -555,11 +669,10 @@ public sealed partial class LogisticSystem : EntitySystem
     {
         var networkId = generateNetworkIdentifier();
         var network = new LogisticNetwork();
-        network.ConnectedNodes.Add(pipe);
-        network.PipeCount = 1;
         network.NetworkId = networkId;
         component.NetworkId = networkId;
         networks.Add(networkId, network);
+        AddPipeToNetwork(pipe, network);
         return networkId;
     }
 
@@ -610,10 +723,16 @@ public sealed partial class LogisticSystem : EntitySystem
             network.Dispose();
             return;
         }
+
         if (comp.isStorage)
+        {
             updateNetworkStorageDataFor(pipe, new Dictionary<string, List<EntityUid>>(), network);
+            network.RelevantStorageRecordsForStorer.Remove(pipe);
+        }
+
         if (comp.isRequester)
             resetNetworkRequestData(network);
+        comp.network = null;
 
         _chat.ChatMessageToAll(Shared.Chat.ChatChannel.OOC, $"{pipe} removed from {network.NetworkId} network", $"{pipe} removed from {network.NetworkId} network", pipe, false, false);
     }
@@ -693,22 +812,24 @@ public sealed partial class LogisticSystem : EntitySystem
         {
             if (!network.itemsById.ContainsKey(key))
             {
-                network.itemsById.Add(key, new StorageRecordById(key));
+                network.itemsById.Add(key, new LogisticNetwork.StorageRecordById(key));
             }
 
             var storageRecord = network.itemsById[key];
-
             if (!storageRecord.Providers.ContainsKey(from))
             {
                 storageRecord.Providers.Add(from, items);
+                storageRecord.TotalAmount += items.Count;
             }
             else
-                storageRecord.Providers[from] = items;
+            {
+                storageRecord.TotalAmount += items.Count - storageRecord.Providers[from].Count;
+                storageRecord.Providers[from].AddRange(items);
+            }
 
-            storageRecord.TotalAmount += items.Count - storageRecord.Providers[from].Count;
             relevantEntries.Add(key);
         }
-        
+
     }
 
     public Dictionary<string, List<EntityUid>> getStorageContentsData(EntityUid target)
@@ -733,7 +854,7 @@ public sealed partial class LogisticSystem : EntitySystem
 
     #region Requests
 
-    public List<LogisticCommand> getRequestsForEntity(EntityUid from)
+    public List<LogisticNetwork.LogisticCommand> getRequestsForEntity(EntityUid from)
     {
         GetLogisticRequestsEvent data = new();
         RaiseLocalEvent(from, data);
@@ -754,12 +875,12 @@ public sealed partial class LogisticSystem : EntitySystem
             network.RelevantRequestsForEntity.Add(from, newRequests);
         else
             network.RelevantRequestsForEntity[from] = newRequests;
-        
+
         network.LogisticCommandQueue.AddRange(newRequests);
 
     }
 
- 
+
 
     #endregion
 }

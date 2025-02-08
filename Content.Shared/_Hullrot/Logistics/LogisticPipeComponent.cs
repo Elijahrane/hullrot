@@ -7,7 +7,7 @@ namespace Content.Shared._Hullrot.Logistics;
 /// <summary>
 /// This is used for...
 /// </summary>
-[RegisterComponent,Serializable, NetSerializable]
+[RegisterComponent]
 public sealed partial class LogisticPipeComponent : Component
 {
     [DataField, ViewVariables]
@@ -34,6 +34,12 @@ public sealed partial class LogisticPipeComponent : Component
     public int NetworkId = 0;
 }
 
+[RegisterComponent]
+public sealed class LogisticAlwaysRequestComponent : Component
+{
+
+}
+
 [Serializable, NetSerializable]
 public enum LogisticVisualLayout
 {
@@ -45,59 +51,7 @@ public enum LogisticVisualLayout
     way4
 }
 
-public class LogisticsSupplyItemsEvent : EntityEventArgs
-{
-    public List<EntityUid> items;
-    public int amountTaken;
-
-    public LogisticsSupplyItemsEvent(List<EntityUid> items)
-    {
-        this.items = items;
-    }
-}
-
-
-public class GetLogisticRequestsEvent : EntityEventArgs
-{
-    public List<LogisticNetwork.LogisticCommand> Requests = new();
-}
-
-public class GetLogisticStorageContents : EntityEventArgs
-{
-    public List<Tuple<string, int>> PrototypeAmountAvailable = new();
-}
-
-public class GetLogisticsStorageSpaceAvailableEvent : EntityEventArgs
-{
-    public int space = 0;
-    public string? prototypeId;
-
-    public GetLogisticsStorageSpaceAvailableEvent()
-    {
-    }
-    public GetLogisticsStorageSpaceAvailableEvent(string prototype)
-    {
-        this.prototypeId = prototype;
-    }
-
-
-}
-
-public class GetLogisticsStorageSpaceTotal : EntityEventArgs
-{
-    public int space = 0;
-}
-
-public class LogisticsStorageContentsChange : EntityEventArgs
-{
-}
-
-public class LogisticsStorageRetrieveItem : EntityEventArgs
-{
-}
-
-        
-public class LogisticNetwork : IDisposable
+public  class LogisticNetwork : IDisposable
 {
     #region InternalClasses
     public abstract class LogisticCommand
@@ -194,7 +148,7 @@ public class LogisticNetwork : IDisposable
     public List<EntityUid> StorageNodes = new();
     [ViewVariables]
     public List<EntityUid> RequesterNodes = new();
-    
+
 
 
     [ViewVariables]
@@ -203,5 +157,3 @@ public class LogisticNetwork : IDisposable
     public int NetworkId = 0;
 
 }
-
-
