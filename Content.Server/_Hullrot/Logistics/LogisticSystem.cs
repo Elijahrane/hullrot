@@ -66,17 +66,39 @@ public sealed partial class LogisticSystem : EntitySystem
 
         SubscribeLocalEvent<LogisticAlwaysRequestComponent, GetVerbsEvent<ActivationVerb>>(OnRequester);
         SubscribeLocalEvent<LogisticAlwaysRequestComponent, GetLogisticsStorageSpaceAvailableEvent>(OnSpace);
+        SubscribeLocalEvent<LogisticPipeComponent, GetLogisticsStorageSpaceAvailableEvent>(OnSpace);
         SubscribeLocalEvent<LogisticAlwaysRequestComponent, LogisticsSupplyItemsEvent>(OnSupply);
+        SubscribeLocalEvent<LogisticAlwaysStoreComponent, GetVerbsEvent<ActivationVerb>>(OnStore);
     }
 
+    public void OnStore(EntityUid uid, LogisticAlwaysStoreComponent comp, ref GetVerbsEvent<ActivationVerb> args)
+    {
+        if (!TryComp<LogisticPipeComponent>(uid, out var netComp))
+            return;
+        if (netComp.NetworkId == 0)
+            return;
+        var network = networks[netComp.NetworkId];
+        ActivationVerb verb = new()
+        {
+            Text = $"store shit",
+            Act = () =>
+            {
+                var contain = _containers.GetContainer(uid, StorageContainerString);
+
+                var req = new LogisticNetwork.LogisticEntityStore(uid, new List<EntityUid>(contain.ContainedEntities), null);
+                network.LogisticCommandQueue.Add(req);
+            }
+        };
+        args.Verbs.Add(verb);
+    }
     public void OnSpace(EntityUid uid,
-        LogisticAlwaysRequestComponent comp,
+        object comp,
         ref GetLogisticsStorageSpaceAvailableEvent args)
     {
         args.space = 10;
     }
 
-    public void OnSupply(EntityUid uid, LogisticAlwaysRequestComponent comp, ref LogisticsSupplyItemsEvent args)
+    public void OnSupply(EntityUid uid, object comp, ref LogisticsSupplyItemsEvent args)
     {
         foreach (var item in args.items)
         {
@@ -148,6 +170,8 @@ public sealed partial class LogisticSystem : EntitySystem
                             lookingIn = network.StorageNodes;
 
                         if (lookingIn.Count == 0)
+                            break;
+                        if (!network.itemsById.ContainsKey(request.prototypeId))
                             break;
                         var sending = new List<EntityUid>();
                         /// STORED so we can update their contents later
@@ -266,11 +290,6 @@ public sealed partial class LogisticSystem : EntitySystem
                     default:
                         break;
 
-                }
-
-                foreach (var compl in completed)
-                {
-                    network.LogisticCommandQueue.Remove(compl);
                 }
             }
             foreach (var compl in completed)

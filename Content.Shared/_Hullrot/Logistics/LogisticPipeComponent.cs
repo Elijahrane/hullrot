@@ -35,10 +35,17 @@ public sealed partial class LogisticPipeComponent : Component
 }
 
 [RegisterComponent]
-public sealed class LogisticAlwaysRequestComponent : Component
+public sealed partial class LogisticAlwaysRequestComponent : Component
 {
 
 }
+
+[RegisterComponent]
+public sealed partial class LogisticAlwaysStoreComponent : Component
+{
+
+}
+
 
 [Serializable, NetSerializable]
 public enum LogisticVisualLayout
