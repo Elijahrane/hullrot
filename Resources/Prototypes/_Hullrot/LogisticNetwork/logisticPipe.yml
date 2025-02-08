@@ -70,3 +70,12 @@
   - type: LogisticPipe
     isRequester: true
   - type: LogisticAlwaysRequest
+
+- type: entity
+  id: LogisticStoreContainer
+  parent: ClosetBomb
+  name: Logistic Storer
+  components:
+  - type: LogisticPipe
+  - type: LogisticAlwaysStore
+
