@@ -93,7 +93,7 @@ public sealed partial class SpaceArtillerySystem : EntitySystem
     {
         if (TryComp<ApcPowerReceiverComponent>(uid, out var apcPowerReceiver) && TryComp<BatteryComponent>(uid, out var battery))
         {
-            apcPowerReceiver.Load = battery.IsFullyCharged ? component.PowerUsePassive : component.PowerUsePassive + component.PowerChargeRate;
+            apcPowerReceiver.Load = battery.CurrentCharge >= battery.MaxCharge * 0.99 ? component.PowerUsePassive : component.PowerUsePassive + component.PowerChargeRate;
         }
     }
 

@@ -11,7 +11,7 @@
   id: Taypan
   maps:
     - Fland
-    - Cog
+    - Saltern
 
 - type: worldZoneSetup
   id: Taypan
@@ -26,8 +26,8 @@
   pos: 0, 0
 
 - type: worldPlacementMap
-  id: Cog
-  mapPrototype: Cog
+  id: Saltern
+  mapPrototype: Saltern
   pos: 4000, 4000
 
 - type: worldZone

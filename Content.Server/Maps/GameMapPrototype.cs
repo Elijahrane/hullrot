@@ -26,6 +26,11 @@ public sealed partial class GameMapPrototype : IPrototype
     [DataField]
     public float MaxRandomOffset = 0f;
 
+    /// <summary>
+    /// Turns out some of the map files are actually secretly grids. Excellent. I love map loading code.
+    /// </summary>
+    [DataField] public bool IsGrid;
+
     // Hullrot: Changed from true by default to false.
     [DataField]
     public bool RandomRotation = false;
