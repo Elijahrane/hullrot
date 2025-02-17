@@ -2,7 +2,8 @@ using Content.Server.GameTicking;
 using Content.Server.Maps;
 using Content.Server._Hullrot.Worldgen.Prototypes;
 using Robust.Shared.Prototypes;
-using Robust.Server.Maps;
+using Robust.Shared.EntitySerialization;
+
 
 namespace Content.Server._Hullrot.Worldgen;
 
@@ -48,11 +49,7 @@ public sealed partial class WorldPlacementSystem : EntitySystem
                 continue;
             }
 
-            var loadOptions = new MapLoadOptions();
-            loadOptions.LoadMap = false; // Stops this from overriding the map we're spanwing onto
-            loadOptions.Offset = placementProto.Pos;
-
-            _gameTicker.LoadGameMap(mapProto, _gameTicker.DefaultMap, loadOptions);
+            _gameTicker.MergeGameMap(mapProto, _gameTicker.DefaultMap, offset: placementProto.Pos);
         }
     }
 }
