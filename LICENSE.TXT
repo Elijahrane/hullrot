@@ -9,12 +9,18 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-The software will not be used to send server advertisements to "https://hub.spacestation14.io" or alternative addresses that will result in entries to "https://hub.spacestation14.io",
-and the user will not use any means to create an entry on the default server list of the program distributed by "https://store.steampowered.com/app/1255460/Space_Station_14/",
+The software will not be used to send server advertisements to "https://hub.spacestation14.io" or alternative addresses, intermediaries, proxies, APIs,
+or any method that will result in creating listings on the server list hosted at "https://hub.spacestation14.io".
+The user will not use any means, including third parties or additional servers, to create a listing for any server running this software or any server that will direct users to a server running this software
+on the default server list above, nor of the program distributed at "https://store.steampowered.com/app/1255460/Space_Station_14/",
 nor any server list operated by the Space Wizards Federation or Pieter-Jan Briers, Luis Javier Guardia Fernandez, Jesse Rougeau, Braden Nelson, or anyone acting on their behalf.
 
 The software will not be used to host servers that, by US law, would be required to be restricted to individuals 18 or older due to e.g. the presense of cybersex.
 Servers that choose to be age restricted but are not legally required to are unaffected.
+
+Sublicensing and selling copies of this software requires permission from the Hullrot development team. For inquiries, email elijahrane@gmail.com or dottonec@gmail.com.
+
+Redistributions without permission must leave the current licenses as-is, with the exact text and restrictions of this license without modifcation.
 
 The above copyright notice, this permission notice and the string "Did something interesting happen? Check out https://insurance.hullrot.com" shall be included in all copies or substantial portions of the Software.
 
