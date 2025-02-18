@@ -1,0 +1,21 @@
+﻿<controls:FancyWindow xmlns="https://spacestation14.io"
+            xmlns:gfx="clr-namespace:Robust.Client.Graphics;assembly=Robust.Client"
+            xmlns:controls="clr-namespace:Content.Client.UserInterface.Controls"
+            xmlns:ui="clr-namespace:Content.Client.Shuttles.UI"
+            Title="{Loc 'fire-control-window-title'}"
+            SetSize="1000 800"
+            MinSize="1000 800">
+    <BoxContainer Name="RootBox" Orientation="Vertical">
+            <BoxContainer Name="StatusBox" Orientation="Vertical">
+                <Label Name="ServerStatus" Text="{Loc 'fire-control-window-disconnected'}"
+                StyleClasses="LabelKeyText" />
+                <Button Name="RefreshButton" Access="Public" Text="{Loc admin-logs-refresh}" StyleClasses="ButtonSquare"/>
+                <BoxContainer Name="ControllablesBox" Orientation="Horizontal">
+                </BoxContainer>
+            </BoxContainer>
+            <BoxContainer Name="RadarContainer" Orientation="Horizontal">
+                <ui:ShuttleNavControl
+                    Name="NavRadar" />
+            </BoxContainer>
+    </BoxContainer>
+</controls:FancyWindow>

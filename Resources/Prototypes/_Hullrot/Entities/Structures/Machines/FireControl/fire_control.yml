@@ -1,0 +1,53 @@
+- type: entity
+  id: FireControlServer
+  parent: BaseMachinePowered
+  name: fire control server
+  description: Manages the remote operation of ship weapons.
+  components:
+  - type: Sprite
+    sprite: Structures/Machines/server.rsi
+    layers:
+      - state: server
+  - type: FireControlServer
+  - type: ApcPowerReceiver
+    powerLoad: 200
+  - type: ExtensionCableReceiver
+  - type: AmbientOnPowered
+  - type: AmbientSound
+    volume: -9
+    range: 5
+    sound:
+      path: /Audio/Ambience/Objects/server_fans.ogg
+
+
+## TODO: These are either debug or should be moved around a bit
+
+- type: entity
+  id: FireControllableTest
+  parent: BaseWeaponTurret
+  name: fire controllable
+  description: Helps Rane debug fire control
+  components:
+  - type: ApcPowerReceiver
+    powerLoad: 200
+  - type: ExtensionCableReceiver
+  - type: FireControllable
+
+- type: entity
+  parent: BaseComputer
+  id: ComputerFireControlConsole
+  name: fire control console
+  description: Interfaces with the fire control server to operate ship weapons.
+  components:
+  - type: FireControlConsole
+  - type: ActivatableUI
+    key: enum.FireControlConsoleUiKey.Key
+  - type: UserInterface
+    interfaces:
+        enum.FireControlConsoleUiKey.Key:
+          type: FireControlConsoleBoundUserInterface
+        enum.WiresUiKey.Key:
+          type: WiresBoundUserInterface
+  - type: RadarConsole
+  - type: WorldLoader
+    radius: 256
