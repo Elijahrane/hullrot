@@ -1,4 +1,5 @@
 using System.Numerics;
+using Content.Client._Hullrot.Radar;
 using Content.Shared.Shuttles.BUIStates;
 using Content.Shared.Shuttles.Components;
 using Content.Shared.Shuttles.Systems;
@@ -13,6 +14,7 @@ using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Physics;
 using Robust.Shared.Physics.Components;
+using Robust.Shared.Timing;
 using Robust.Shared.Utility;
 
 namespace Content.Client.Shuttles.UI;
@@ -23,6 +25,7 @@ public sealed partial class ShuttleNavControl : BaseShuttleControl
     [Dependency] private readonly IMapManager _mapManager = default!;
     private readonly SharedShuttleSystem _shuttles;
     private readonly SharedTransformSystem _transform;
+    private readonly RadarBlipsSystem _blips;
 
     /// <summary>
     /// Used to transform all of the radar objects. Typically is a shuttle console parented to a grid.
@@ -49,11 +52,31 @@ public sealed partial class ShuttleNavControl : BaseShuttleControl
 
     private List<Entity<MapGridComponent>> _grids = new();
 
+    #region Hullrot
+    // These 2 handle timing updates
+    private const float RadarUpdateInterval = 2f;
+    private float _updateAccumulator = 0f;
+    protected override void FrameUpdate(FrameEventArgs args)
+    {
+        base.FrameUpdate(args);
+        _updateAccumulator += args.DeltaSeconds;
+
+        if (_updateAccumulator >= RadarUpdateInterval)
+        {
+            _updateAccumulator = 0; // I'm not subtracting because frame updates can majorly lag in a way normal ones cannot.
+
+            if (_consoleEntity != null)
+                _blips.RequestBlips((EntityUid)_consoleEntity);
+        }
+    }
+    #endregion Hullrot
+
     public ShuttleNavControl() : base(64f, 256f, 256f)
     {
         RobustXamlLoader.Load(this);
         _shuttles = EntManager.System<SharedShuttleSystem>();
         _transform = EntManager.System<SharedTransformSystem>();
+        _blips = EntManager.System<RadarBlipsSystem>();
     }
 
     public void SetMatrix(EntityCoordinates? coordinates, Angle? angle)
@@ -290,6 +313,25 @@ public sealed partial class ShuttleNavControl : BaseShuttleControl
             }
         }
 
+        #region Hullrot
+        // Draw radar line
+        // First, figure out which angle to draw.
+        var updateRatio = _updateAccumulator / RadarUpdateInterval;
+
+        Angle angle = updateRatio * Math.Tau;
+        var origin = ScalePosition(-new Vector2(Offset.X, -Offset.Y));
+        handle.DrawLine(origin, origin + angle.ToVec() * ScaledMinimapRadius * 1.42f, Color.Orange.WithAlpha(0.1f));
+
+        // Draw blips
+        var blips = _blips.GetCurrentBlips();
+
+        foreach (var blip in blips)
+        {
+            var blipPos = Vector2.Transform(blip.Item1, worldToShuttle * shuttleToView);
+            handle.DrawCircle(blipPos, blip.Item2 * 3f, blip.Item3.WithAlpha(0.8f));
+        }
+
+        #endregion
     }
 
     private void DrawDocks(DrawingHandleScreen handle, EntityUid uid, Matrix3x2 gridToView)
